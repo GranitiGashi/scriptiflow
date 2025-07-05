@@ -5,8 +5,12 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
 // Create a default DemoRequestForm component since we don't have access to the actual implementation
-const DemoRequestForm = ({ onSubmitSuccess = () => {} }) => {
-  const handleSubmit = (e) => {
+const DemoRequestForm = ({
+  onSubmitSuccess = () => {},
+}: {
+  onSubmitSuccess?: () => void;
+}) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSubmitSuccess();
   };
