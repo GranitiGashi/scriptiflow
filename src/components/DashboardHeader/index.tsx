@@ -38,7 +38,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           aria-label="Toggle sidebar"
         >
           {/* Use size and color props instead of className */}
-          <FaBars size={24} color="#4B5563" />
+       
         </button>
         <h1 className="text-xl sm:text-2xl font-bold text-[#111]">{pageTitle}</h1>
       </div>

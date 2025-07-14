@@ -52,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       <div className="flex justify-between items-center md:hidden mb-4">
         <h2 className="text-xl font-bold capitalize">{role ?? 'User'} Panel</h2>
         <button onClick={onClose} aria-label="Close sidebar">
-          <FaTimes size={24} />
+          
         </button>
       </div>
 
