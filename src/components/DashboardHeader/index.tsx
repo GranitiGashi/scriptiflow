@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import React from 'react';
-import { FaBars } from 'react-icons/fa';
+
 
 interface HeaderProps {
   onToggleSidebar?: () => void;

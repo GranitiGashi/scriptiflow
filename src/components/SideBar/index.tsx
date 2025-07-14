@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
-import { FaTimes } from 'react-icons/fa';
+
 
 interface NavItem {
   name: string;
