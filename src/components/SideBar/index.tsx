@@ -29,7 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const staticNavItems: NavItem[] = [
     { name: 'Dashboard', path: '/dashboard', icon: 'fas fa-tachometer-alt' },
     { name: 'Support', path: '/support', icon: 'fas fa-life-ring' },
-    { name: 'Social Media', path: '/socialMedia', icon: 'fab fa-facebook', external: true },
+    { name: 'Social Media', path: '/socialMedia', icon: 'fab fa-facebook'},
   ];
 
   const navMap: Record<string, NavItem[]> = {
