@@ -33,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   ];
 
   const navMap: Record<string, NavItem[]> = {
-    admin: [{ name: 'All Sessions', path: '/Admin/Sessions', icon: 'fas fa-users' }],
+    admin: [{ name: 'Register', path: '/Admin/register/', icon: 'fas fa-users' }],
     client: [{ name: 'Water Tracer', path: '/WaterTracer', icon: 'fas fa-calendar-alt' }],
   };
 
