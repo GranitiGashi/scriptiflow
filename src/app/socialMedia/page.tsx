@@ -7,41 +7,49 @@ import { useEffect, useState } from 'react';
 export default function ConnectPage() {
   const [accounts, setAccounts] = useState<{ facebook_id: string | null; instagram_id: string | null } | null>(null);
   const [loginUrl, setLoginUrl] = useState<string | null>(null);
-const storedUser = localStorage.getItem('user');
-const user = storedUser ? JSON.parse(storedUser) : null;
-const userEmail = user?.email
-const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  console.log('user', user)
-  console.log('userEmail', userEmail)
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
 
+  // Load user email from localStorage (only on client)
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userString = localStorage.getItem('user');
+      const user = userString ? JSON.parse(userString) : null;
+      setUserEmail(user?.email ?? null);
+    }
+  }, []);
+
+  // Fetch social accounts and login URL once userEmail is available
+  useEffect(() => {
+    if (!userEmail) return;
+
     async function fetchSocialStatus() {
       try {
-        const res = await fetch(`${baseDomain}/api/social-accounts-by-email?email=${encodeURIComponent(userEmail)}`);
+        const res = await fetch(`${baseDomain}/api/social-accounts-by-email?email=${encodeURIComponent(userEmail!)}`);
         const data = await res.json();
         setAccounts({
           facebook_id: data.facebook_id,
           instagram_id: data.instagram_id,
         });
       } catch (err) {
-        console.error('Failed to fetch social accounts', err);
+        console.error('❌ Failed to fetch social accounts', err);
       }
     }
 
     async function fetchLoginUrl() {
       try {
-        const res = await fetch(`http://localhost:8080/api/fb/login-url?user_id=${encodeURIComponent(userEmail)}`);
+        const res = await fetch(`${baseDomain}/api/fb/login-url?user_id=${encodeURIComponent(userEmail!)}`);
         const data = await res.json();
         setLoginUrl(data.auth_url);
       } catch (err) {
-        console.error('Failed to fetch login URL', err);
+        console.error('❌ Failed to fetch login URL', err);
       }
     }
 
     fetchSocialStatus();
     fetchLoginUrl();
-  }, []);
+  }, [userEmail, baseDomain]);
 
   const integrations = [
     {
