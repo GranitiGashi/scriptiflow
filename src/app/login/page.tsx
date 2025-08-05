@@ -17,6 +17,7 @@ export interface LoginResponse {
   access_token: string;
   refreshToken: string;
   user: User;
+  session: string;
 }
 
 interface FormData {
@@ -46,7 +47,7 @@ const LoginForm: React.FC = () => {
 
     try {
       const response = await axios.post<LoginResponse>(
-        "https://ffmpeg-j3vv.onrender.com/api/login",
+        "http://localhost:8080/api/login",
         {
           email: formData.email,
           password: formData.password,
@@ -57,10 +58,10 @@ const LoginForm: React.FC = () => {
           },
         }
       );
-      console.log("Login response:", response);
+      console.log("Login response:", response.data.session);
 
-      localStorage.setItem("access_token", response.data.access_token);
-      localStorage.setItem("refreshToken", response.data.refreshToken);
+      localStorage.setItem("access_token", response.data.session?.access_token);
+      localStorage.setItem("refreshToken", response.data.session?.refreshToken);
       localStorage.setItem("user", JSON.stringify(response.data.user));
       localStorage.setItem("role", response.data.user.role);
 

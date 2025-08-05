@@ -56,7 +56,7 @@ const RegisterForm: React.FC = () => {
 
     try {
       const response = await fetch(
-        "https://ffmpeg-j3vv.onrender.com/api/signup",
+        "http://localhost:8080/api/signup",
         {
           method: "POST",
           headers: {
