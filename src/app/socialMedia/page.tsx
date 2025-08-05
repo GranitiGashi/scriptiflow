@@ -7,8 +7,10 @@ import { useEffect, useState } from 'react';
 export default function ConnectPage() {
   const [accounts, setAccounts] = useState<{ facebook_id: string | null; instagram_id: string | null } | null>(null);
   const [loginUrl, setLoginUrl] = useState<string | null>(null);
-const user = JSON.parse(localStorage.getItem('user'))
+const storedUser = localStorage.getItem('user');
+const user = storedUser ? JSON.parse(storedUser) : null;
 const userEmail = user?.email
+const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
 
   console.log('user', user)
   console.log('userEmail', userEmail)
@@ -16,7 +18,7 @@ const userEmail = user?.email
   useEffect(() => {
     async function fetchSocialStatus() {
       try {
-        const res = await fetch(`http://localhost:8080/api/social-accounts-by-email?email=${encodeURIComponent(userEmail)}`);
+        const res = await fetch(`${baseDomain}/api/social-accounts-by-email?email=${encodeURIComponent(userEmail)}`);
         const data = await res.json();
         setAccounts({
           facebook_id: data.facebook_id,

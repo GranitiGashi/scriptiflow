@@ -26,7 +26,7 @@ const RegisterForm: React.FC = () => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [storedRole, setStoredRole] = useState<string | null>(null);
   const [tokenChecked, setTokenChecked] = useState(false);
-
+const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     const role = localStorage.getItem("role");
@@ -56,7 +56,7 @@ const RegisterForm: React.FC = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:8080/api/signup",
+        `${baseDomain}/api/signup`,
         {
           method: "POST",
           headers: {

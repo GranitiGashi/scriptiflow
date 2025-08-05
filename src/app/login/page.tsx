@@ -17,7 +17,10 @@ export interface LoginResponse {
   access_token: string;
   refreshToken: string;
   user: User;
-  session: string;
+  session: {
+    access_token: string;
+    refreshToken: string;
+  };
 }
 
 interface FormData {
@@ -35,6 +38,8 @@ const LoginForm: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -47,7 +52,7 @@ const LoginForm: React.FC = () => {
 
     try {
       const response = await axios.post<LoginResponse>(
-        "http://localhost:8080/api/login",
+        `${baseDomain}/api/login`,
         {
           email: formData.email,
           password: formData.password,
