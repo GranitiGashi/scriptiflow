@@ -11,16 +11,15 @@ export default function ConnectPage() {
 
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
 
-  // Load user email from localStorage (only on client)
+  // Load user email from localStorage (only in browser)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
       const userString = localStorage.getItem('user');
       const user = userString ? JSON.parse(userString) : null;
       setUserEmail(user?.email ?? null);
     }
   }, []);
 
-  // Fetch social accounts and login URL once userEmail is available
   useEffect(() => {
     if (!userEmail) return;
 
@@ -72,7 +71,7 @@ export default function ConnectPage() {
       name: 'TikTok',
       description: 'Connect your TikTok account.',
       icon: <FaTiktok className="text-black text-3xl" />,
-      href: '/tiktok/login', // TODO: implement this later
+      href: '/tiktok/login',
       connected: false,
       bg: 'bg-gray-100',
     },
@@ -80,7 +79,7 @@ export default function ConnectPage() {
       name: 'Stripe',
       description: 'Connect your Stripe account to accept payments.',
       icon: <FaStripe className="text-purple-600 text-3xl" />,
-      href: '/stripe/connect', // TODO: implement this later
+      href: '/stripe/connect',
       connected: false,
       bg: 'bg-purple-50',
     },
@@ -90,7 +89,6 @@ export default function ConnectPage() {
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50 p-8">
         <h1 className="text-3xl font-bold mb-8 text-center">Integrations</h1>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {integrations.map((integration) => (
             <div
