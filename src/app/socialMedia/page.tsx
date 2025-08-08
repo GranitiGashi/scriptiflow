@@ -1,8 +1,9 @@
-// app/socialMedia/page.tsx
-'use client';  // this page uses client code (localStorage etc)
+'use client';
 
-import Inegrations from '@/components/Integrations'
+import dynamic from 'next/dynamic';
+
+const Integrations = dynamic(() => import('@/components/Integrations'), { ssr: false });
 
 export default function Page() {
-  return <Inegrations />;
+  return <Integrations />;
 }
