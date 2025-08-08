@@ -32,7 +32,7 @@ export default function ConnectPage() {
           instagram_id: data.instagram_id,
         });
       } catch (err) {
-        console.error('❌ Failed to fetch social accounts', err);
+        console.error('❌ Failed to fetch social accountds', err);
       }
     }
 
