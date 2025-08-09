@@ -11,7 +11,7 @@ export default function ConnectPage() {
   const [userId, setUserId] = useState<string | null>(null);
 
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
-
+console.log('baseDomain', baseDomain)
   // Load user email from localStorage (only in browser)
   useEffect(() => {
     if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
@@ -25,10 +25,17 @@ export default function ConnectPage() {
   useEffect(() => {
     if (!userEmail || !userId) return;
 
+    console.log('userEmail', userEmail)
+    console.log('userId', userId)
+
+
     async function fetchSocialStatus() {
       try {
-        const res = await fetch(`${baseDomain}/api/social-accounts-by-email?email=${encodeURIComponent(userEmail!)}`);
+        const res = await fetch(`${baseDomain}/api/fb/login-url?user_id=${encodeURIComponent(userId!)}`, {
+          headers: { 'Accept': 'application/json' }
+        });
         const data = await res.json();
+        console.log('data', data)
         setAccounts({
           facebook_id: data.facebook_id,
           instagram_id: data.instagram_id,
@@ -43,6 +50,7 @@ export default function ConnectPage() {
         const res = await fetch(`${baseDomain}/api/fb/login-url?user_id=${encodeURIComponent(userId!)}`);
         const data = await res.json();
         setLoginUrl(data.auth_url);
+        console.log('data', data)
       } catch (err) {
         console.error('❌ Failed to fetch login URL', err);
       }
@@ -112,9 +120,8 @@ export default function ConnectPage() {
               ) : (
                 <a
                   href={integration.href || '#'}
-                  className={`mt-6 inline-block ${
-                    integration.href ? 'bg-black hover:bg-opacity-80' : 'bg-gray-400 cursor-not-allowed'
-                  } text-white text-sm font-medium py-2 px-4 rounded transition`}
+                  className={`mt-6 inline-block ${integration.href ? 'bg-black hover:bg-opacity-80' : 'bg-gray-400 cursor-not-allowed'
+                    } text-white text-sm font-medium py-2 px-4 rounded transition`}
                 >
                   Connect
                 </a>
