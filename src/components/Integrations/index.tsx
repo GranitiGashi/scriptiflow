@@ -8,6 +8,7 @@ export default function ConnectPage() {
   const [accounts, setAccounts] = useState<{ facebook_id: string | null; instagram_id: string | null } | null>(null);
   const [loginUrl, setLoginUrl] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
 
@@ -17,11 +18,12 @@ export default function ConnectPage() {
       const userString = localStorage.getItem('user');
       const user = userString ? JSON.parse(userString) : null;
       setUserEmail(user?.email ?? null);
+      setUserId(user?.id ?? null);
     }
   }, []);
 
   useEffect(() => {
-    if (!userEmail) return;
+    if (!userEmail || !userId) return;
 
     async function fetchSocialStatus() {
       try {
@@ -38,7 +40,7 @@ export default function ConnectPage() {
 
     async function fetchLoginUrl() {
       try {
-        const res = await fetch(`${baseDomain}/api/fb/login-url?user_id=${encodeURIComponent(userEmail!)}`);
+        const res = await fetch(`${baseDomain}/api/fb/login-url?user_id=${encodeURIComponent(userId!)}`);
         const data = await res.json();
         setLoginUrl(data.auth_url);
       } catch (err) {
@@ -48,7 +50,7 @@ export default function ConnectPage() {
 
     fetchSocialStatus();
     fetchLoginUrl();
-  }, [userEmail, baseDomain]);
+  }, [userEmail, baseDomain, userId]);
 
   const integrations = [
     {
