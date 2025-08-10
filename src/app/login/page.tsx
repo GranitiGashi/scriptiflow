@@ -15,12 +15,8 @@ export interface User {
 
 export interface LoginResponse {
   access_token: string;
-  refreshToken: string;
+  refresh_token: string;
   user: User;
-  session: {
-    access_token: string;
-    refreshToken: string;
-  };
 }
 
 interface FormData {
@@ -63,10 +59,10 @@ const LoginForm: React.FC = () => {
           },
         }
       );
-      console.log("Login response:", response.data.session);
+      console.log("Login response:", response.data);
 
-      localStorage.setItem("access_token", response.data.session?.access_token);
-      localStorage.setItem("refreshToken", response.data.session?.refreshToken);
+      localStorage.setItem("access_token", response.data?.access_token);
+      localStorage.setItem("refresh_token", response.data?.refresh_token);
       localStorage.setItem("user", JSON.stringify(response.data.user));
       localStorage.setItem("role", response.data.user.role);
 
