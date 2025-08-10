@@ -1,7 +1,7 @@
 'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { FaFacebook, FaInstagram, FaTiktok, FaStripe } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaStripe, FaCar } from 'react-icons/fa';
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -21,14 +21,28 @@ export default function ConnectPage() {
     instagram_username: null,
     instagram_profile_picture: null,
   });
+  const [mobileDe, setMobileDe] = useState<{
+    username: string | null;
+    dealership_name: string | null;
+    logo_url: string | null;
+  }>({
+    username: null,
+    dealership_name: null,
+    logo_url: null,
+  });
   const [loginUrl, setLoginUrl] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMobileDePopup, setShowMobileDePopup] = useState<boolean>(false);
+  const [mobileDeUsername, setMobileDeUsername] = useState<string>('');
+  const [mobileDePassword, setMobileDePassword] = useState<string>('');
+  const [mobileDeCompanyName, setMobileDeCompanyName] = useState<string>('');
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
+
 
   // Load user ID from localStorage
   useEffect(() => {
@@ -36,10 +50,11 @@ export default function ConnectPage() {
       const userString = localStorage.getItem('user');
       const user = userString ? JSON.parse(userString) : null;
       setUserId(user?.id ?? null);
+      setMobileDeCompanyName(user?.company_name ?? null);
     }
   }, []);
 
-  // Fetch social accounts and login URL
+  // Fetch social accounts, mobile.de credentials, and login URL
   useEffect(() => {
     if (!userId) return;
 
@@ -56,7 +71,7 @@ export default function ConnectPage() {
           headers: {
             'Accept': 'application/json',
             'Authorization': `Bearer ${token}`,
-            'x-refresh-token': `${refreshToken}`
+            'x-refresh-token': `${refreshToken}`,
           },
         });
         if (!res.ok) {
@@ -80,6 +95,40 @@ export default function ConnectPage() {
       }
     }
 
+    async function fetchMobileDeStatus() {
+      try {
+        const token = localStorage.getItem('access_token');
+        const refreshToken = localStorage.getItem('refresh_token');
+        if (!token) {
+          throw new Error('No access token found. Please log in again.');
+        }
+        const res = await fetch(`${baseDomain}/api/connect-mobile-de`, {
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'x-refresh-token': `${refreshToken}`,
+          },
+        });
+        if (!res.ok) {
+          const errorData = await res.json();
+          if (errorData.error === 'No credentials found') {
+            setMobileDe({ username: null, dealership_name: null, logo_url: null });
+            return;
+          }
+          throw new Error(`Failed to fetch mobile.de credentials: ${errorData.error || res.statusText}`);
+        }
+        const data = await res.json();
+        setMobileDe({
+          username: data.username,
+          dealership_name: data.dealership_name,
+          logo_url: data.logo_url,
+        });
+      } catch (err: any) {
+        console.error('❌ Failed to fetch mobile.de credentials', err);
+        setError(err.message || 'Failed to load mobile.de credentials. Please try again.');
+      }
+    }
+
     async function fetchLoginUrl() {
       try {
         const token = localStorage.getItem('access_token');
@@ -100,11 +149,11 @@ export default function ConnectPage() {
         setLoginUrl(data.auth_url);
       } catch (err) {
         console.error('❌ Failed to fetch login URL', err);
-        // setError(err.message || 'Failed to initiate social login. Please try again.');
       }
     }
 
     fetchSocialStatus();
+    fetchMobileDeStatus();
     fetchLoginUrl();
   }, [userId, baseDomain]);
 
@@ -120,6 +169,7 @@ export default function ConnectPage() {
           setError(null);
           try {
             const token = localStorage.getItem('access_token');
+            const refreshToken = localStorage.getItem('refresh_token');
             if (!token) {
               throw new Error('No access token found. Please log in again.');
             }
@@ -127,6 +177,7 @@ export default function ConnectPage() {
               headers: {
                 'Accept': 'application/json',
                 'Authorization': `Bearer ${token}`,
+                'x-refresh-token': `${refreshToken}`,
               },
             });
             if (!res.ok) {
@@ -158,6 +209,80 @@ export default function ConnectPage() {
     }
   }, [searchParams, router, userId, baseDomain]);
 
+  // Handle mobile.de connection
+  const handleMobileDeConnect = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      const token = localStorage.getItem('access_token');
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!token) {
+        throw new Error('No access token found. Please log in again.');
+      }
+      const res = await fetch(`${baseDomain}/api/connect-mobile-de`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-refresh-token': `${refreshToken}`,
+        },
+        body: JSON.stringify({ username: mobileDeUsername, password: mobileDePassword }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(`Failed to connect mobile.de: ${errorData.error || res.statusText}`);
+      }
+      setMobileDeUsername('');
+      setMobileDePassword('');
+      setShowMobileDePopup(false);
+      // Refresh mobile.de status
+      const statusRes = await fetch(`${baseDomain}/api/connect-mobile-de`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-refresh-token': `${refreshToken}`,
+        },
+      });
+      if (statusRes.ok) {
+        const data = await statusRes.json();
+        setMobileDe({
+          username: data.username,
+          dealership_name: localStorage.getItem('user.company_name'),
+          logo_url: data.logo_url,
+        });
+      }
+    } catch (err: any) {
+      console.error('❌ Failed to connect mobile.de', err);
+      setError(err.message || 'Failed to connect mobile.de. Please try again.');
+    }
+  };
+
+  // Handle mobile.de disconnection
+  const handleMobileDeDisconnect = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!token) {
+        throw new Error('No access token found. Please log in again.');
+      }
+      const res = await fetch(`${baseDomain}/api/connect-mobile-de`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-refresh-token': `${refreshToken}`,
+        },
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(`Failed to disconnect mobile.de: ${errorData.error || res.statusText}`);
+      }
+      setMobileDe({ username: null, dealership_name: null, logo_url: null });
+    } catch (err: any) {
+      console.error('❌ Failed to disconnect mobile.de', err);
+      setError(err.message || 'Failed to disconnect mobile.de. Please try again.');
+    }
+  };
+
   const integrations = useMemo(
     () => [
       {
@@ -180,16 +305,16 @@ export default function ConnectPage() {
         profilePicture: accounts?.instagram_profile_picture,
         bg: 'bg-pink-50 hover:bg-pink-100',
       },
-      // {
-      //   name: 'TikTok',
-      //   description: 'Connect your TikTok account.',
-      //   icon: <FaTiktok className="text-black text-4xl" />,
-      //   href: '/tiktok/login',
-      //   connected: false,
-      //   nameOrUsername: null,
-      //   profilePicture: null,
-      //   bg: 'bg-gray-100 hover:bg-gray-200',
-      // },
+      {
+        name: 'mobile.de',
+        description: 'Connect your mobile.de account to manage car listings.',
+        icon: <FaCar className="text-green-600 text-4xl" />,
+        href: '#', // Handled by popup
+        connected: !!mobileDe?.username,
+        nameOrUsername: mobileDeCompanyName,
+        profilePicture: mobileDe?.logo_url,
+        bg: 'bg-green-50 hover:bg-green-100',
+      },
       {
         name: 'Stripe',
         description: 'Connect your Stripe account to accept payments.',
@@ -201,13 +326,13 @@ export default function ConnectPage() {
         bg: 'bg-purple-50 hover:bg-purple-100',
       },
     ],
-    [loginUrl, accounts]
+    [loginUrl, accounts, mobileDe]
   );
 
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
-        <h1 className="text-3xl font-bold mb-8 text-center text-gray-800">Connect Your Social Accounts</h1>
+        <h1 className="text-3xl font-bold mb-8 text-center text-gray-800">Connect Your Accounts</h1>
         {error && (
           <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg text-center max-w-2xl mx-auto">
             {error}
@@ -256,28 +381,83 @@ export default function ConnectPage() {
                   </div>
                 </div>
                 {integration.connected ? (
+                  
                   <div className="flex space-x-2">
                     <span className="flex-1 bg-green-500 text-white text-sm font-medium py-2 px-4 rounded text-center">
                       Connected
                     </span>
                     <button
-                      onClick={() => alert(`Disconnect ${integration.name} not implemented yet`)}
+                      onClick={() =>
+                        integration.name === 'mobile.de'
+                          ? handleMobileDeDisconnect()
+                          : alert(`Disconnect ${integration.name} not implemented yet`)
+                      }
                       className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 px-4 rounded transition"
                     >
                       Disconnect
                     </button>
                   </div>
+                  
                 ) : (
-                  <a
-                    href={integration.href || '#'}
-                    className={`block text-center ${integration.href ? 'bg-black hover:bg-opacity-80' : 'bg-gray-400 cursor-not-allowed'
+                  <button
+                    onClick={() =>
+                      integration.name === 'mobile.de'
+                        ? setShowMobileDePopup(true)
+                        : (window.location.href = integration.href || '#')
+                    }
+                    className={`block text-center ${integration.href || integration.name === 'mobile.de' ? 'bg-black hover:bg-opacity-80' : 'bg-gray-400 cursor-not-allowed'
                       } text-white text-sm font-medium py-2 px-4 rounded transition`}
+                    disabled={!integration.href && integration.name !== 'mobile.de'}
                   >
                     Connect
-                  </a>
+                  </button>
                 )}
               </div>
             ))}
+          </div>
+        )}
+        {showMobileDePopup && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">Connect to mobile.de</h2>
+              <form onSubmit={handleMobileDeConnect}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Username</label>
+                  <input
+                    type="text"
+                    value={mobileDeUsername}
+                    onChange={(e) => setMobileDeUsername(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Password</label>
+                  <input
+                    type="password"
+                    value={mobileDePassword}
+                    onChange={(e) => setMobileDePassword(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileDePopup(false)}
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded"
+                  >
+                    Connect
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </div>
