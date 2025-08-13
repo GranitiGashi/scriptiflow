@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 interface NavItem {
   name: string;
@@ -22,30 +22,38 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedRole = localStorage.getItem('role');
+    const storedRole = localStorage.getItem("role");
     setRole(storedRole);
   }, []);
 
   const staticNavItems: NavItem[] = [
-    { name: 'Dashboard', path: '/dashboard', icon: 'fas fa-tachometer-alt' },
-    { name: 'Support', path: '/support', icon: 'fas fa-life-ring' },
-    { name: 'Social Media', path: '/socialMedia', icon: 'fab fa-facebook'},
+    { name: "Dashboard", path: "/dashboard", icon: "fas fa-tachometer-alt" },
+    { name: "Support", path: "/support", icon: "fas fa-life-ring" },
+    // { name: 'Social Media', path: '/socialMedia', icon: 'fab fa-facebook'},
     // { name: 'My Inventory', path: '/dashboard/inventory', icon: 'fab fa-facebook'},
   ];
 
   const navMap: Record<string, NavItem[]> = {
-    admin: [{ name: 'Register', path: '/Admin/register/', icon: 'fas fa-users' }],
-    client: [{ name: 'Water Tracer', path: '/WaterTracer', icon: 'fas fa-calendar-alt' }],
+    admin: [
+      { name: "Register", path: "/Admin/register/", icon: "fas fa-users" },
+    ],
+    client: [
+      { name: "Social Media", path: "/socialMedia", icon: "fab fa-facebook" },
+      {name: "My Inventory", path: "/dashboard/inventory",icon: "fab fa-facebook"},
+    ],
   };
 
-  const navItems: NavItem[] = [...staticNavItems, ...(role ? navMap[role] ?? [] : [])];
+  const navItems: NavItem[] = [
+    ...staticNavItems,
+    ...(role ? (navMap[role] ?? []) : []),
+  ];
 
   return (
     <aside
       className={`
         fixed top-0 left-0 h-full w-64 bg-gray-800 text-white p-4 z-50
         transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${isOpen ? "translate-x-0" : "-translate-x-full"}
       `}
     >
       {/* Close Button at top right inside sidebar */}
@@ -57,7 +65,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         ×
       </button>
 
-      <h2 className="text-2xl font-bold mb-6 text-gray-100">{role ?? 'User'} Panel</h2>
+      <h2 className="text-2xl font-bold mb-6 text-gray-100">
+        {role ?? "User"} Panel
+      </h2>
       <nav>
         <ul className="space-y-4">
           {navItems.map((item) => (
@@ -69,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   rel="noopener noreferrer"
                   onClick={onClose}
                   className={`flex items-center hover:text-gray-300 ${
-                    pathname === item.path ? 'text-blue-400' : 'text-gray-200'
+                    pathname === item.path ? "text-blue-400" : "text-gray-200"
                   }`}
                 >
                   <i className={`${item.icon} mr-3 text-lg`} />
@@ -80,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   href={item.path}
                   onClick={onClose}
                   className={`flex items-center hover:text-gray-300 ${
-                    pathname === item.path ? 'text-blue-400' : 'text-gray-200'
+                    pathname === item.path ? "text-blue-400" : "text-gray-200"
                   }`}
                 >
                   <i className={`${item.icon} mr-3 text-lg`} />
@@ -93,7 +103,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <button
               onClick={() => {
                 localStorage.clear();
-                router.push('/login');
+                router.push("/login");
               }}
               className="flex items-center hover:text-gray-300 text-gray-200 w-full text-left"
             >
