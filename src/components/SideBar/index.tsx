@@ -38,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       { name: "Register", path: "/Admin/register/", icon: "fas fa-users" },
     ],
     client: [
-      { name: "Social Media", path: "/socialMedia", icon: "fab fa-facebook" },
+      { name: "Social Media", path: "/dashboard/social-media", icon: "fab fa-facebook" },
       {name: "My Inventory", path: "/dashboard/inventory",icon: "fab fa-facebook"},
     ],
   };
@@ -57,13 +57,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       `}
     >
       {/* Close Button at top right inside sidebar */}
-      <button
+      {/* <button
         onClick={onClose}
         aria-label="Close sidebar"
         className="absolute top-4 right-4 text-white text-2xl focus:outline-none"
       >
-        ×
-      </button>
+        
+      </button> */}
 
       <h2 className="text-2xl font-bold mb-6 text-gray-100">
         {role ?? "User"} Panel

@@ -9,7 +9,7 @@ interface LayoutProps {
 }
 
 export default function DashboardLayout({ children }: LayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true); // open by default
 
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
   const closeSidebar = () => setSidebarOpen(false);
@@ -20,17 +20,24 @@ export default function DashboardLayout({ children }: LayoutProps) {
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
 
       {/* Content Area */}
-      <div className="flex-1 flex flex-col relative">
+      <div
+        className={`
+          flex-1 flex flex-col relative transition-all duration-300
+          ${sidebarOpen ? 'ml-64' : 'ml-0'}
+        `}
+      >
         {/* Header with toggle button */}
         <Header onToggleSidebar={toggleSidebar} />
 
         {/* Main Content */}
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-6 overflow-auto">
+          <div className="max-w-7xl mx-auto">{children}</div>
+        </main>
 
-        {/* Overlay for any screen */}
+        {/* Overlay for small screens */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
             onClick={closeSidebar}
             aria-hidden="true"
           />

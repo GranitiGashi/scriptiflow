@@ -92,7 +92,7 @@ const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br bg-[#0f1624] p-6">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br  p-6">
         <div className="max-w-md w-full space-y-6 p-10 bg-[#0f1624] border border-purple-600 rounded-xl shadow-xl">
           <h2 className="text-center text-3xl font-extrabold text-purple-400">
             Register New User
