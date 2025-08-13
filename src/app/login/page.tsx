@@ -15,7 +15,7 @@ export interface User {
 
 export interface LoginResponse {
   access_token: string;
-  refreshToken: string;
+  refresh_token: string;
   user: User;
 }
 
@@ -34,6 +34,8 @@ const LoginForm: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -46,7 +48,7 @@ const LoginForm: React.FC = () => {
 
     try {
       const response = await axios.post<LoginResponse>(
-        "https://ffmpeg-j3vv.onrender.com/api/login",
+        `${baseDomain}/api/login`,
         {
           email: formData.email,
           password: formData.password,
@@ -57,10 +59,10 @@ const LoginForm: React.FC = () => {
           },
         }
       );
-      console.log("Login response:", response);
+      console.log("Login response:", response.data);
 
-      localStorage.setItem("access_token", response.data.access_token);
-      localStorage.setItem("refreshToken", response.data.refreshToken);
+      localStorage.setItem("access_token", response.data?.access_token);
+      localStorage.setItem("refresh_token", response.data?.refresh_token);
       localStorage.setItem("user", JSON.stringify(response.data.user));
       localStorage.setItem("role", response.data.user.role);
 

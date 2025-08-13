@@ -30,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: 'Dashboard', path: '/dashboard', icon: 'fas fa-tachometer-alt' },
     { name: 'Support', path: '/support', icon: 'fas fa-life-ring' },
     { name: 'Social Media', path: '/socialMedia', icon: 'fab fa-facebook'},
+    // { name: 'My Inventory', path: '/dashboard/inventory', icon: 'fab fa-facebook'},
   ];
 
   const navMap: Record<string, NavItem[]> = {
