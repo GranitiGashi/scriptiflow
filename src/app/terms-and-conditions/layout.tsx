@@ -4,7 +4,7 @@ import React from 'react';
 import NavigationBar from '@/components/NavigationBar';
 import Footer from '@/components/Footer';
 
-export default function PublicPolicyLayout({
+export default function PublicTermsLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -17,3 +17,5 @@ export default function PublicPolicyLayout({
     </div>
   );
 }
+
+

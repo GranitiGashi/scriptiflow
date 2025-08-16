@@ -1,401 +1,295 @@
 "use client";
 
 import React from "react";
-import HeroSection from "@/components/HeroSection";
 import NavigationBar from "@/components/NavigationBar";
-import ContentSection from "@/components/ContentSection";
 import DemoRequestForm from "@/components/DemoRequestForm";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
+import { 
+  CheckCircle2, 
+  Rocket, 
+  Brain, 
+  Share2, 
+  LineChart, 
+  Shield, 
+  ArrowRight,
   Zap,
   Target,
   BarChart3,
   Users,
   Car,
   TrendingUp,
-  Shield,
   Clock,
-  CheckCircle,
   Star,
-  ArrowRight,
+  Sparkles,
+  Workflow,
+  Camera,
+  MessageSquare,
   Mail,
-  Phone,
-  MapPin,
+  Upload,
+  Eye,
+  Database,
+  Smartphone,
+  Instagram,
+  Facebook,
+  CreditCard,
+  BarChart,
+  Send,
+  Globe,
+  PlayCircle,
+  Settings,
+  Layers,
+  Activity
 } from "lucide-react";
 
 export default function Home() {
   const [showDemoForm, setShowDemoForm] = React.useState(false);
 
-  const handleRequestDemo = () => {
-    setShowDemoForm(true);
-  };
-
   return (
-    <main className="min-h-screen bg-black text-white overflow-x-hidden">
+    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-950 text-white overflow-x-hidden">
       <NavigationBar />
 
-      {/* Hero Section */}
-      <HeroSection />
+      {/* HERO SECTION - Futuristic Design */}
+      <section className="relative pt-32 pb-24 px-4 md:px-8 lg:px-16">
+        <div className="absolute inset-0 -z-10">
+          {/* Animated gradient mesh background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-violet-500/10 via-purple-500/5 to-cyan-500/10 animate-pulse"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]"></div>
+          {/* Grid pattern */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#312e81_1px,transparent_1px),linear-gradient(to_bottom,#312e81_1px,transparent_1px)] bg-[size:40px_40px] opacity-30"></div>
+        </div>
+        
+        <div className="container mx-auto max-w-7xl text-center relative z-10">
+          <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-violet-500/10 to-cyan-500/10 border border-violet-400/20 text-violet-300 text-sm mb-8 backdrop-blur-sm">
+            <Sparkles className="h-4 w-4" />
+            <span>AI-Powered Dealership Automation Platform</span>
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold leading-tight tracking-tight mb-8">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-violet-200 to-cyan-200">
+              Automate Your
+            </span>
+            <br />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-purple-400 to-cyan-400">
+              Car Dealership
+            </span>
+          </h1>
+          
+          <p className="text-xl md:text-2xl text-slate-300 max-w-4xl mx-auto mb-12 leading-relaxed">
+            Seamlessly integrate Mobile.de, autopost to Facebook & Instagram, run AI-powered ads, 
+            and send personalized email campaigns. All in one powerful automation platform.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
+            <Button 
+              onClick={() => setShowDemoForm(true)} 
+              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white px-10 py-4 text-lg rounded-xl font-semibold shadow-2xl shadow-violet-500/25 border-0"
+            >
+              Start Free Trial
+              <Rocket className="ml-2 h-5 w-5" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-2 border-violet-400/30 text-violet-300 hover:bg-violet-500/10 px-10 py-4 text-lg rounded-xl backdrop-blur-sm"
+              onClick={() => setShowDemoForm(true)}
+            >
+              Watch Demo
+              <PlayCircle className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
 
-      {/* Product Section */}
-      <ContentSection
-        id="product"
-        title="Revolutionary Marketing Automation"
-        subtitle="Built for Car Dealerships"
-        description="Transform your dealership's marketing with AI-powered automation that drives real results. Our platform combines cutting-edge technology with deep automotive industry expertise."
-        contentType="features"
-        items={[
-          {
-            title: "AI-Powered Lead Generation",
-            description:
-              "Automatically identify and engage with high-intent prospects using advanced machine learning algorithms that analyze customer behavior patterns.",
-            icon: <Zap className="h-6 w-6" />,
-          },
-          {
-            title: "Smart Campaign Optimization",
-            description:
-              "Continuously improve your marketing ROI with real-time performance analytics and automated A/B testing across all channels.",
-            icon: <Target className="h-6 w-6" />,
-          },
-          {
-            title: "Customer Journey Tracking",
-            description:
-              "Follow prospects from first click to final purchase with comprehensive analytics that reveal every touchpoint in their journey.",
-            icon: <BarChart3 className="h-6 w-6" />,
-          },
-          {
-            title: "Inventory Integration",
-            description:
-              "Automatically sync your marketing campaigns with inventory changes, ensuring customers always see available vehicles.",
-            icon: <Car className="h-6 w-6" />,
-          },
-        ]}
-        className="bg-gradient-to-b from-black to-purple-950/20"
-      />
+          {/* Key metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-violet-400 mb-2">500+</div>
+              <p className="text-slate-400 text-sm">Dealerships Trust Us</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-cyan-400 mb-2">95%</div>
+              <p className="text-slate-400 text-sm">Time Saved</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-purple-400 mb-2">3x</div>
+              <p className="text-slate-400 text-sm">More Leads</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-pink-400 mb-2">24/7</div>
+              <p className="text-slate-400 text-sm">Automation</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      {/* Use Cases Section */}
-      <ContentSection
-        id="use-cases"
-        title="Proven Results Across Dealerships"
-        subtitle="Real Success Stories"
-        description="See how our platform transforms dealership marketing operations and drives measurable business growth."
-        contentType="cards"
-        items={[
-          {
-            title: "35% Increase in Lead Conversion",
-            description:
-              "Premium Auto Group saw a 35% boost in lead-to-sale conversion rates within 90 days of implementation through personalized follow-up sequences.",
-            image:
-              "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80",
-          },
-          {
-            title: "40% Reduction in Ad Spend",
-            description:
-              "Metro Motors reduced their advertising costs by 40% while maintaining lead volume through AI-driven campaign optimization and audience targeting.",
-            image:
-              "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80",
-          },
-          {
-            title: "60% Faster Sales Cycle",
-            description:
-              "City Car Center accelerated their average sales cycle by 60% using automated nurturing campaigns and intelligent lead scoring.",
-            image:
-              "https://images.unsplash.com/photo-1552960394-c81add8de6b8?w=800&q=80",
-          },
-        ]}
-        className="bg-gradient-to-b from-purple-950/20 to-black"
-      />
-
-      {/* Pricing Section */}
-      <section
-        id="pricing"
-        className="py-20 px-4 md:px-8 lg:px-16 bg-gradient-to-b from-black to-indigo-950/20"
-      >
+      {/* INTEGRATIONS SHOWCASE */}
+      <section className="py-20 px-4 md:px-8 lg:px-16 bg-gradient-to-b from-slate-900/50 to-indigo-950/50">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
-              Choose Your Growth Plan
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-cyan-400">
+                One Platform. All Your Tools.
+              </span>
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Flexible pricing designed to scale with your dealership's success
+            <p className="text-slate-300 text-xl max-w-3xl mx-auto">
+              Connect Mobile.de, Facebook, Instagram, Stripe, and your email tools in minutes. 
+              No coding required.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Starter Plan */}
-            <Card className="bg-black/50 border border-purple-500/30 hover:border-purple-500/60 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-transparent"></div>
-              <CardHeader className="relative z-10">
-                <CardTitle className="text-2xl text-white mb-2">
-                  Starter
-                </CardTitle>
-                <div className="flex items-baseline mb-4">
-                  <span className="text-4xl font-bold text-purple-400">
-                    $499
-                  </span>
-                  <span className="text-gray-400 ml-2">/month</span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
+            {[
+              { name: 'Mobile.de', icon: <Car className="h-8 w-8" />, color: 'text-orange-400' },
+              { name: 'Facebook', icon: <Facebook className="h-8 w-8" />, color: 'text-blue-400' },
+              { name: 'Instagram', icon: <Instagram className="h-8 w-8" />, color: 'text-pink-400' },
+              { name: 'Stripe', icon: <CreditCard className="h-8 w-8" />, color: 'text-purple-400' },
+            ].map((integration, i) => (
+              <div key={i} className="group p-6 rounded-2xl bg-gradient-to-b from-slate-800/50 to-slate-900/50 border border-slate-700/50 hover:border-violet-500/30 transition-all duration-300 backdrop-blur-sm">
+                <div className={`${integration.color} mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                  {integration.icon}
                 </div>
-                <CardDescription className="text-gray-300">
-                  Perfect for small to medium dealerships getting started with
-                  automation
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <ul className="space-y-3 mb-8">
-                  {[
-                    "Basic lead automation",
-                    "Email marketing campaigns",
-                    "Performance dashboard",
-                    "CRM integration",
-                    "Email support",
-                  ].map((feature, index) => (
-                    <li key={index} className="flex items-center text-gray-300">
-                      <CheckCircle className="h-5 w-5 text-purple-400 mr-3 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
-                  onClick={handleRequestDemo}
-                >
-                  Get Started
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Professional Plan - Featured */}
-            <Card className="bg-black/50 border-2 border-purple-500 hover:border-purple-400 transition-all duration-300 relative overflow-hidden transform scale-105">
-              <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-center py-2 text-sm font-medium">
-                Most Popular
+                <h3 className="text-lg font-semibold text-white">{integration.name}</h3>
               </div>
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-indigo-600/10"></div>
-              <CardHeader className="relative z-10 pt-12">
-                <CardTitle className="text-2xl text-white mb-2">
-                  Professional
-                </CardTitle>
-                <div className="flex items-baseline mb-4">
-                  <span className="text-4xl font-bold text-purple-400">
-                    $999
-                  </span>
-                  <span className="text-gray-400 ml-2">/month</span>
-                </div>
-                <CardDescription className="text-gray-300">
-                  Advanced automation for growing dealerships ready to scale
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <ul className="space-y-3 mb-8">
-                  {[
-                    "Advanced lead automation",
-                    "Multi-channel marketing",
-                    "Custom reporting & analytics",
-                    "Priority support",
-                    "Campaign optimization",
-                    "Inventory sync",
-                    "A/B testing suite",
-                  ].map((feature, index) => (
-                    <li key={index} className="flex items-center text-gray-300">
-                      <CheckCircle className="h-5 w-5 text-purple-400 mr-3 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-900/30"
-                  onClick={handleRequestDemo}
-                >
-                  Request Demo
-                </Button>
-              </CardContent>
-            </Card>
+            ))}
+          </div>
 
-            {/* Enterprise Plan */}
-            <Card className="bg-black/50 border border-purple-500/30 hover:border-purple-500/60 transition-all duration-300 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-transparent"></div>
-              <CardHeader className="relative z-10">
-                <CardTitle className="text-2xl text-white mb-2">
-                  Enterprise
-                </CardTitle>
-                <div className="flex items-baseline mb-4">
-                  <span className="text-4xl font-bold text-purple-400">
-                    Custom
-                  </span>
-                </div>
-                <CardDescription className="text-gray-300">
-                  Complete solution for large dealership groups and franchises
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <ul className="space-y-3 mb-8">
-                  {[
-                    "Full marketing automation suite",
-                    "Dedicated account manager",
-                    "Custom integrations",
-                    "24/7 priority support",
-                    "Advanced analytics",
-                    "White-label options",
-                    "Custom training",
-                  ].map((feature, index) => (
-                    <li key={index} className="flex items-center text-gray-300">
-                      <CheckCircle className="h-5 w-5 text-purple-400 mr-3 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  variant="outline"
-                  className="w-full border-purple-500 text-purple-400 hover:bg-purple-500/20"
-                  onClick={handleRequestDemo}
-                >
-                  Contact Sales
-                </Button>
-              </CardContent>
-            </Card>
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-400/20 text-violet-300 text-sm">
+              <Globe className="h-4 w-4" />
+              <span>Connect 500+ more tools via API</span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* About Section */}
-      <section
-        id="about"
-        className="py-20 px-4 md:px-8 lg:px-16 bg-gradient-to-b from-indigo-950/20 to-black relative"
-      >
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
-                Pioneering Automotive Marketing
-              </h2>
-              <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-                Founded in 2020 by automotive industry veterans and AI experts,
-                we've dedicated ourselves to solving the unique marketing
-                challenges faced by car dealerships in the digital age.
-              </p>
-              <p className="text-gray-300 mb-8">
-                Our team combines deep industry knowledge with cutting-edge
-                technology to create solutions that drive real, measurable
-                results for our clients. We understand that every dealership is
-                unique, which is why our platform adapts to your specific needs
-                and goals.
-              </p>
-
-              <div className="grid grid-cols-3 gap-6 mb-8">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-400 mb-2">
-                    500+
-                  </div>
-                  <div className="text-gray-400 text-sm">Dealerships</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-400 mb-2">
-                    35%
-                  </div>
-                  <div className="text-gray-400 text-sm">
-                    Avg. Lead Increase
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-400 mb-2">
-                    $2M+
-                  </div>
-                  <div className="text-gray-400 text-sm">Revenue Generated</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-indigo-600/20 rounded-2xl blur-xl"></div>
-              <img
-                src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80"
-                alt="Team working on automotive marketing solutions"
-                className="relative z-10 w-full h-96 object-cover rounded-2xl border border-purple-500/30"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Decorative elements */}
-        <div className="absolute top-1/4 left-0 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl"></div>
-      </section>
-
-      {/* How It Works Section */}
-      <section
-        id="how-it-works"
-        className="py-20 px-4 md:px-8 lg:px-16 bg-gradient-to-b from-black to-purple-950/20"
-      >
+      {/* FEATURES SECTION */}
+      <section id="features" className="py-24 px-4 md:px-8 lg:px-16 bg-gradient-to-b from-indigo-950/50 to-violet-950/50">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
-              How It Works
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-violet-400">
+                Powerful Automation Features
+              </span>
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Our streamlined process gets you from setup to success in just
-              four simple steps
+            <p className="text-slate-300 text-xl max-w-3xl mx-auto">
+              Everything you need to automate your dealership operations and grow your business.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                icon: <Upload className="h-8 w-8" />,
+                title: "Mobile.de Integration",
+                description: "Automatically sync your inventory from Mobile.de. New cars appear instantly across all your marketing channels.",
+                gradient: "from-orange-500/20 to-red-500/20",
+                border: "border-orange-500/30"
+              },
+              {
+                icon: <Share2 className="h-8 w-8" />,
+                title: "Social Media Autoposting",
+                description: "Automatically post new inventory to Facebook and Instagram with AI-generated captions and hashtags.",
+                gradient: "from-blue-500/20 to-pink-500/20",
+                border: "border-blue-500/30"
+              },
+              {
+                icon: <Brain className="h-8 w-8" />,
+                title: "AI-Powered Ads",
+                description: "Create and optimize Facebook and Instagram ads using AI. Target the right customers with smart audience selection.",
+                gradient: "from-purple-500/20 to-violet-500/20",
+                border: "border-purple-500/30"
+              },
+              {
+                icon: <BarChart className="h-8 w-8" />,
+                title: "Advanced Analytics",
+                description: "Get detailed insights on ad performance, social media engagement, and sales metrics in real-time dashboards.",
+                gradient: "from-cyan-500/20 to-teal-500/20",
+                border: "border-cyan-500/30"
+              },
+              {
+                icon: <Mail className="h-8 w-8" />,
+                title: "Email Automation",
+                description: "Send personalized email campaigns to different customer segments with dynamic content and scheduling.",
+                gradient: "from-green-500/20 to-emerald-500/20",
+                border: "border-green-500/30"
+              },
+              {
+                icon: <CreditCard className="h-8 w-8" />,
+                title: "Payment Processing",
+                description: "Integrated Stripe payments for ad spending, subscriptions, and customer transactions with automatic reconciliation.",
+                gradient: "from-violet-500/20 to-purple-500/20",
+                border: "border-violet-500/30"
+              }
+            ].map((feature, i) => (
+              <div key={i} className={`group p-8 rounded-2xl bg-gradient-to-b ${feature.gradient} border ${feature.border} hover:scale-105 transition-all duration-300 backdrop-blur-sm`}>
+                <div className="text-white mb-6 group-hover:scale-110 transition-transform duration-300">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-bold text-white mb-4">{feature.title}</h3>
+                <p className="text-slate-300 leading-relaxed">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="py-24 px-4 md:px-8 lg:px-16 bg-gradient-to-b from-violet-950/50 to-slate-950/50">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-cyan-400">
+                How It Works
+              </span>
+            </h2>
+            <p className="text-slate-300 text-xl max-w-3xl mx-auto">
+              Get started in minutes with our simple 4-step process
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
-                number: "01",
-                title: "Integration",
-                description:
-                  "We seamlessly connect with your existing CRM, inventory management, and marketing tools.",
-                icon: <Shield className="h-8 w-8" />,
+                step: "01",
+                title: "Connect",
+                description: "Link your Mobile.de account, Facebook, Instagram, and email tools",
+                icon: <Settings className="h-12 w-12" />,
+                color: "violet"
               },
               {
-                number: "02",
-                title: "Configuration",
-                description:
-                  "Our experts configure the platform to match your dealership's specific needs and goals.",
-                icon: <Target className="h-8 w-8" />,
+                step: "02",
+                title: "Configure",
+                description: "Set up your posting schedules, ad targeting, and email templates",
+                icon: <Layers className="h-12 w-12" />,
+                color: "purple"
               },
               {
-                number: "03",
-                title: "Automation",
-                description:
-                  "Marketing campaigns launch automatically based on customer behavior and inventory changes.",
-                icon: <Zap className="h-8 w-8" />,
+                step: "03",
+                title: "Automate",
+                description: "Watch as new cars are automatically posted and promoted across channels",
+                icon: <Workflow className="h-12 w-12" />,
+                color: "cyan"
               },
               {
-                number: "04",
-                title: "Optimization",
-                description:
-                  "AI continuously improves performance based on real-world results and market conditions.",
-                icon: <TrendingUp className="h-8 w-8" />,
-              },
-            ].map((step, index) => (
-              <div key={index} className="relative">
-                <div className="bg-black/50 border border-purple-500/30 rounded-xl p-6 hover:border-purple-500/60 transition-all duration-300 h-full">
-                  <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full mb-6 mx-auto">
-                    <div className="text-purple-100">{step.icon}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-purple-400 font-semibold mb-2">
-                      STEP {step.number}
+                step: "04",
+                title: "Optimize",
+                description: "Review insights and let AI improve your campaigns for better results",
+                icon: <Activity className="h-12 w-12" />,
+                color: "pink"
+              }
+            ].map((step, i) => (
+              <div key={i} className="relative">
+                <div className="text-center">
+                  <div className={`w-20 h-20 rounded-full bg-gradient-to-r from-${step.color}-600 to-${step.color}-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-${step.color}-500/25`}>
+                    <div className="text-white">
+                      {step.icon}
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-4">
-                      {step.title}
-                    </h3>
-                    <p className="text-gray-300">{step.description}</p>
                   </div>
+                  <div className={`text-sm text-${step.color}-400 font-bold mb-2`}>STEP {step.step}</div>
+                  <h3 className="text-xl font-bold text-white mb-4">{step.title}</h3>
+                  <p className="text-slate-400">{step.description}</p>
                 </div>
-
+                
                 {/* Connection line */}
-                {index < 3 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-px bg-gradient-to-r from-purple-500 to-transparent"></div>
+                {i < 3 && (
+                  <div className="hidden lg:block absolute top-10 -right-4 w-8 h-px bg-gradient-to-r from-violet-500 to-transparent"></div>
                 )}
               </div>
             ))}
@@ -403,286 +297,234 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section
-        id="contact"
-        className="py-20 px-4 md:px-8 lg:px-16 bg-gradient-to-b from-purple-950/20 to-black"
-      >
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
-              Ready to Transform Your Marketing?
-            </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Get in touch with our team to see how we can help your dealership
-              grow
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Contact Form */}
-            <div className="bg-black/50 border border-purple-500/30 rounded-xl p-8">
-              <h3 className="text-2xl font-bold text-white mb-6">
-                Send us a message
-              </h3>
-              <form className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName" className="text-gray-300">
-                      First Name
-                    </Label>
-                    <Input
-                      id="firstName"
-                      className="bg-gray-900/50 border-purple-500/30 focus:border-purple-500 text-white mt-2"
-                      placeholder="John"
-                    />
+      {/* PRICING */}
+      <section id="pricing" className="py-24 px-4 md:px-8 lg:px-16 bg-gradient-to-b from-slate-950/50 to-indigo-950/50">
+        <div className="container mx-auto max-w-6xl text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Choose Your Plan</h2>
+          <p className="text-slate-300 text-xl mb-16">Start small, scale as you grow. No setup fees, cancel anytime.</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              {
+                name: 'Starter',
+                price: '€299/mo',
+                description: 'Perfect for small dealerships',
+                features: [
+                  'Mobile.de integration',
+                  'Basic social media posting',
+                  'Email campaigns',
+                  'Basic analytics',
+                  'Up to 100 cars'
+                ],
+                cta: 'Start Free Trial',
+                popular: false
+              },
+              {
+                name: 'Professional',
+                price: '€599/mo',
+                description: 'Most popular for growing dealerships',
+                features: [
+                  'Everything in Starter',
+                  'AI-powered ads',
+                  'Advanced autoposting',
+                  'Custom email templates',
+                  'Advanced analytics',
+                  'Up to 500 cars',
+                  'Priority support'
+                ],
+                cta: 'Start Free Trial',
+                popular: true
+              },
+              {
+                name: 'Enterprise',
+                price: 'Custom',
+                description: 'For large dealership groups',
+                features: [
+                  'Everything in Professional',
+                  'Unlimited cars',
+                  'Custom integrations',
+                  'Dedicated account manager',
+                  'White-label options',
+                  'API access',
+                  'Custom training'
+                ],
+                cta: 'Contact Sales',
+                popular: false
+              }
+            ].map((plan, idx) => (
+              <div key={plan.name} className={`relative p-8 rounded-2xl border backdrop-blur-sm ${
+                plan.popular 
+                  ? 'border-violet-500/50 bg-gradient-to-b from-violet-500/10 to-purple-500/10 scale-105' 
+                  : 'border-slate-700/50 bg-gradient-to-b from-slate-800/50 to-slate-900/50'
+              }`}>
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-2 text-sm rounded-full bg-gradient-to-r from-violet-500 to-purple-500 text-white font-semibold">
+                    Most Popular
                   </div>
-                  <div>
-                    <Label htmlFor="lastName" className="text-gray-300">
-                      Last Name
-                    </Label>
-                    <Input
-                      id="lastName"
-                      className="bg-gray-900/50 border-purple-500/30 focus:border-purple-500 text-white mt-2"
-                      placeholder="Doe"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="email" className="text-gray-300">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    className="bg-gray-900/50 border-purple-500/30 focus:border-purple-500 text-white mt-2"
-                    placeholder="john@yourdealership.com"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="company" className="text-gray-300">
-                    Dealership Name
-                  </Label>
-                  <Input
-                    id="company"
-                    className="bg-gray-900/50 border-purple-500/30 focus:border-purple-500 text-white mt-2"
-                    placeholder="ABC Motors"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="message" className="text-gray-300">
-                    Message
-                  </Label>
-                  <Textarea
-                    id="message"
-                    className="bg-gray-900/50 border-purple-500/30 focus:border-purple-500 text-white mt-2 min-h-[120px]"
-                    placeholder="Tell us about your marketing goals and challenges..."
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-3"
+                )}
+                <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                <div className="text-4xl font-bold text-violet-400 mb-2">{plan.price}</div>
+                <p className="text-slate-400 mb-8">{plan.description}</p>
+                
+                <ul className="space-y-4 mb-8 text-left">
+                  {plan.features.map(feature => (
+                    <li key={feature} className="flex items-center gap-3 text-slate-300">
+                      <CheckCircle2 className="h-5 w-5 text-violet-400 flex-shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                
+                <Button 
+                  onClick={() => setShowDemoForm(true)} 
+                  className={`w-full py-3 rounded-xl font-semibold ${
+                    plan.popular 
+                      ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white' 
+                      : 'bg-slate-700 hover:bg-slate-600 text-white'
+                  }`}
                 >
-                  Send Message
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  {plan.cta}
                 </Button>
-              </form>
-            </div>
-
-            {/* Contact Information */}
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-6">
-                  Get in touch
-                </h3>
-                <p className="text-gray-300 mb-8">
-                  Ready to see how our platform can transform your dealership's
-                  marketing? Our team is here to help you get started.
-                </p>
               </div>
-
-              <div className="space-y-6">
-                <div className="flex items-start space-x-4">
-                  <div className="flex items-center justify-center w-12 h-12 bg-purple-600/20 rounded-lg flex-shrink-0">
-                    <Mail className="h-6 w-6 text-purple-400" />
-                  </div>
-                  <div>
-                    <h4 className="text-white font-semibold mb-1">Email</h4>
-                    <p className="text-gray-300">hello@autodrive.ai</p>
-                    <p className="text-gray-400 text-sm">
-                      We'll respond within 24 hours
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="flex items-center justify-center w-12 h-12 bg-purple-600/20 rounded-lg flex-shrink-0">
-                    <Phone className="h-6 w-6 text-purple-400" />
-                  </div>
-                  <div>
-                    <h4 className="text-white font-semibold mb-1">Phone</h4>
-                    <p className="text-gray-300">(555) 123-4567</p>
-                    <p className="text-gray-400 text-sm">Mon-Fri 9AM-6PM PST</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="flex items-center justify-center w-12 h-12 bg-purple-600/20 rounded-lg flex-shrink-0">
-                    <MapPin className="h-6 w-6 text-purple-400" />
-                  </div>
-                  <div>
-                    <h4 className="text-white font-semibold mb-1">Office</h4>
-                    <p className="text-gray-300">123 Innovation Drive</p>
-                    <p className="text-gray-300">San Francisco, CA 94105</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-600/10 to-indigo-600/10 border border-purple-500/30 rounded-xl p-6">
-                <div className="flex items-center mb-4">
-                  <Clock className="h-6 w-6 text-purple-400 mr-3" />
-                  <h4 className="text-white font-semibold">
-                    Quick Response Guarantee
-                  </h4>
-                </div>
-                <p className="text-gray-300 text-sm">
-                  We understand that time is money in the automotive industry.
-                  That's why we guarantee a response to all inquiries within 24
-                  hours.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Demo Request Dialog */}
-      <DemoRequestForm open={showDemoForm} onOpenChange={setShowDemoForm} />
-
-      {/* Footer */}
-      <footer className="bg-black border-t border-purple-900/30 py-12">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center mb-4">
-                <img
-                  src="https://api.dicebear.com/7.x/identicon/svg?seed=autodrive"
-                  alt="AutoDrive Logo"
-                  className="h-8 w-8 mr-3"
-                />
-                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-600">
-                  AutoDrive
-                </span>
-              </div>
-              <p className="text-gray-400 mb-4 max-w-md">
-                Revolutionizing car dealership marketing with AI-powered
-                automation. Drive more leads, increase conversions, and grow
-                your business.
-              </p>
-              <div className="flex space-x-4">
-                {/* Social media icons would go here */}
-              </div>
-            </div>
-
-            <div>
-              <h5 className="text-white font-semibold mb-4">Product</h5>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <a
-                    href="#product"
-                    className="hover:text-purple-400 transition-colors"
-                  >
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#pricing"
-                    className="hover:text-purple-400 transition-colors"
-                  >
-                    Pricing
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#use-cases"
-                    className="hover:text-purple-400 transition-colors"
-                  >
-                    Use Cases
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#how-it-works"
-                    className="hover:text-purple-400 transition-colors"
-                  >
-                    How It Works
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h5 className="text-white font-semibold mb-4">Company</h5>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <a
-                    href="#about"
-                    className="hover:text-purple-400 transition-colors"
-                  >
-                    About
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#contact"
-                    className="hover:text-purple-400 transition-colors"
-                  >
-                    Contact
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-purple-400 transition-colors"
-                  >
-                    Careers
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-purple-400 transition-colors"
-                  >
-                    Blog
-                  </a>
-                </li>
-              </ul>
-            </div>
+      {/* TESTIMONIALS */}
+      <section className="py-24 px-4 md:px-8 lg:px-16 bg-gradient-to-b from-indigo-950/50 to-violet-950/50">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-white mb-6">What Our Customers Say</h2>
+            <p className="text-slate-300 text-xl">Real results from real dealerships</p>
           </div>
 
-          <div className="border-t border-purple-900/30 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 text-sm mb-4 md:mb-0">
-              © 2024 AutoDrive AI. All rights reserved.
-            </p>
-            <div className="flex space-x-6 text-sm text-gray-400">
-              <a href="#" className="hover:text-purple-400 transition-colors">
-                Privacy Policy
-              </a>
-              <a href="#" className="hover:text-purple-400 transition-colors">
-                Terms of Service
-              </a>
-              <a href="#" className="hover:text-purple-400 transition-colors">
-                Cookie Policy
-              </a>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                text: "ScriptiFlow transformed our social media presence. We now post consistently across all platforms and our engagement has tripled. The AI ads feature alone paid for itself in the first month.",
+                author: "Marcus Weber",
+                role: "Marketing Director",
+                company: "Berlin Auto Center",
+                results: "+300% engagement"
+              },
+              {
+                text: "The Mobile.de integration is seamless. New cars automatically appear on our social media within minutes. Our sales team loves the email automation - it nurtures leads while they focus on closing deals.",
+                author: "Sarah Mueller",
+                role: "General Manager", 
+                company: "Munich Motors",
+                results: "+150% lead conversion"
+              },
+              {
+                text: "We've saved 20 hours per week on manual posting and ad management. The insights dashboard gives us clear ROI metrics, and the automated email campaigns have increased our repeat customers by 40%.",
+                author: "Thomas Klein",
+                role: "Owner",
+                company: "Hamburg Car Gallery",
+                results: "+40% repeat customers"
+              }
+            ].map((testimonial, i) => (
+              <div key={i} className="p-8 rounded-2xl bg-gradient-to-b from-slate-800/50 to-slate-900/50 border border-slate-700/50 backdrop-blur-sm">
+                <div className="text-violet-400 mb-4">
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-current" />
+                    ))}
+                  </div>
+                </div>
+                <blockquote className="text-slate-300 mb-6 italic">
+                  "{testimonial.text}"
+                </blockquote>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold text-white">{testimonial.author}</div>
+                    <div className="text-slate-400 text-sm">{testimonial.role}</div>
+                    <div className="text-slate-400 text-sm">{testimonial.company}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-violet-400 font-bold text-lg">{testimonial.results}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </footer>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="py-24 px-4 md:px-8 lg:px-16 bg-gradient-to-b from-violet-950/50 to-slate-950/50">
+        <div className="container mx-auto max-w-4xl">
+          <h2 className="text-4xl font-bold text-center text-white mb-16">Frequently Asked Questions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              {
+                q: 'How quickly can I get started?',
+                a: 'Most dealerships are up and running within 24 hours. Our team provides personalized onboarding to ensure smooth integration with your existing systems.'
+              },
+              {
+                q: 'Does it work with my Mobile.de account?',
+                a: 'Yes! We have full API integration with Mobile.de. Your inventory syncs automatically and new listings appear across all your marketing channels instantly.'
+              },
+              {
+                q: 'Can I customize the AI-generated ads?',
+                a: 'Absolutely. You can review and edit all AI-generated content before it goes live. Set your brand guidelines and the AI will learn your preferences over time.'
+              },
+              {
+                q: 'What email templates are included?',
+                a: 'We provide proven templates for new arrivals, price drops, service reminders, follow-ups, and seasonal campaigns. All are customizable to match your brand.'
+              },
+              {
+                q: 'How do I track ROI from social media ads?',
+                a: 'Our dashboard shows detailed metrics including cost per lead, conversion rates, and revenue attribution. Connect your CRM for complete sales tracking.'
+              },
+              {
+                q: 'Is my data secure?',
+                a: 'Yes. We use enterprise-grade security with encrypted data storage, regular backups, and GDPR compliance. Your customer data never leaves secure EU servers.'
+              }
+            ].map((faq, idx) => (
+              <div key={idx} className="p-6 rounded-2xl bg-gradient-to-b from-slate-800/50 to-slate-900/50 border border-slate-700/50 backdrop-blur-sm">
+                <h3 className="text-lg font-bold text-white mb-3">{faq.q}</h3>
+                <p className="text-slate-400">{faq.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA SECTION */}
+      <section className="py-24 px-4 md:px-8 lg:px-16 bg-gradient-to-b from-slate-950 to-black">
+        <div className="container mx-auto max-w-4xl text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            Ready to Automate Your Dealership?
+          </h2>
+          <p className="text-slate-300 text-xl mb-12">
+            Join hundreds of dealerships already growing with ScriptiFlow. 
+            Start your free trial today - no credit card required.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <Button 
+              onClick={() => setShowDemoForm(true)} 
+              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white px-10 py-4 text-lg rounded-xl font-semibold shadow-2xl shadow-violet-500/25"
+            >
+              Start Free Trial
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-2 border-violet-400/30 text-violet-300 hover:bg-violet-500/10 px-10 py-4 text-lg rounded-xl"
+              onClick={() => setShowDemoForm(true)}
+            >
+              Schedule Demo
+            </Button>
+          </div>
+          
+          <div className="mt-12 text-slate-400 text-sm">
+            <p>✓ 14-day free trial  ✓ No setup fees  ✓ Cancel anytime</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Demo dialog */}
+      <DemoRequestForm open={showDemoForm} onOpenChange={setShowDemoForm} mailtoTo="hello@scriptiflow.com" />
     </main>
   );
 }

@@ -18,11 +18,13 @@ import { CheckCircle } from "lucide-react";
 interface DemoRequestFormProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  mailtoTo?: string;
 }
 
 export default function DemoRequestForm({
   open = true,
   onOpenChange,
+  mailtoTo = 'hello@autodrive.ai',
 }: DemoRequestFormProps) {
   const [formState, setFormState] = useState({
     name: "",
@@ -45,12 +47,19 @@ export default function DemoRequestForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    // Simulate form submission
+    try {
+      const subject = encodeURIComponent(`Demo Request — ${formState.company || formState.name}`);
+      const body = encodeURIComponent(
+        `Name: ${formState.name}\nEmail: ${formState.email}\nCompany: ${formState.company}\nPhone: ${formState.phone}\n\nMessage:\n${formState.message}`
+      );
+      if (typeof window !== 'undefined') {
+        window.location.href = `mailto:${mailtoTo}?subject=${subject}&body=${body}`;
+      }
+    } catch (_) {}
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSubmitted(true);
-    }, 1500);
+    }, 300);
   };
 
   const resetForm = () => {
@@ -66,22 +75,22 @@ export default function DemoRequestForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#121212] border border-purple-500/30 max-w-md md:max-w-lg w-[90vw] rounded-xl shadow-xl shadow-purple-900/20">
+      <DialogContent className="bg-gradient-to-b from-slate-800 to-slate-900 border border-violet-500/30 max-w-md md:max-w-lg w-[90vw] rounded-2xl shadow-2xl shadow-violet-500/10 backdrop-blur-sm">
         {!isSubmitted ? (
           <>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent">
-                Request a Demo
+              <DialogTitle className="text-2xl font-bold text-white">
+                Get started for free
               </DialogTitle>
-              <DialogDescription className="text-gray-300">
+              <DialogDescription className="text-slate-300">
                 Fill out the form below and our team will get back to you within
-                24 hours.
+                24 hours to set up your account.
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-gray-200">
+                <Label htmlFor="name" className="text-slate-200 font-medium">
                   Full Name
                 </Label>
                 <Input
@@ -90,13 +99,13 @@ export default function DemoRequestForm({
                   value={formState.name}
                   onChange={handleChange}
                   required
-                  className="bg-[#1a1a1a] border-purple-500/30 focus:border-purple-500 text-white"
+                  className="bg-slate-700 border-slate-600 focus:border-violet-500 text-white rounded-lg"
                   placeholder="John Doe"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-200">
+                <Label htmlFor="email" className="text-slate-200 font-medium">
                   Email Address
                 </Label>
                 <Input
@@ -106,13 +115,13 @@ export default function DemoRequestForm({
                   value={formState.email}
                   onChange={handleChange}
                   required
-                  className="bg-[#1a1a1a] border-purple-500/30 focus:border-purple-500 text-white"
+                  className="bg-slate-700 border-slate-600 focus:border-violet-500 text-white rounded-lg"
                   placeholder="john@yourdealership.com"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="company" className="text-gray-200">
+                <Label htmlFor="company" className="text-slate-200 font-medium">
                   Dealership / Company
                 </Label>
                 <Input
@@ -121,13 +130,13 @@ export default function DemoRequestForm({
                   value={formState.company}
                   onChange={handleChange}
                   required
-                  className="bg-[#1a1a1a] border-purple-500/30 focus:border-purple-500 text-white"
+                  className="bg-slate-700 border-slate-600 focus:border-violet-500 text-white rounded-lg"
                   placeholder="ABC Motors"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-gray-200">
+                <Label htmlFor="phone" className="text-slate-200 font-medium">
                   Phone Number
                 </Label>
                 <Input
@@ -135,13 +144,13 @@ export default function DemoRequestForm({
                   name="phone"
                   value={formState.phone}
                   onChange={handleChange}
-                  className="bg-[#1a1a1a] border-purple-500/30 focus:border-purple-500 text-white"
+                  className="bg-slate-700 border-slate-600 focus:border-violet-500 text-white rounded-lg"
                   placeholder="(123) 456-7890"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="message" className="text-gray-200">
+                <Label htmlFor="message" className="text-slate-200 font-medium">
                   Message (Optional)
                 </Label>
                 <Textarea
@@ -149,7 +158,7 @@ export default function DemoRequestForm({
                   name="message"
                   value={formState.message}
                   onChange={handleChange}
-                  className="bg-[#1a1a1a] border-purple-500/30 focus:border-purple-500 text-white min-h-[100px]"
+                  className="bg-slate-700 border-slate-600 focus:border-emerald-500 text-white min-h-[100px] rounded-lg"
                   placeholder="Tell us about your specific needs or questions..."
                 />
               </div>
@@ -158,28 +167,28 @@ export default function DemoRequestForm({
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-2 rounded-md transition-all duration-300 shadow-lg shadow-purple-900/30 hover:shadow-purple-900/50 border-none"
+                  className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 border-none"
                 >
-                  {isSubmitting ? "Submitting..." : "Request Demo"}
+                  {isSubmitting ? "Submitting..." : "Get started for free"}
                 </Button>
               </DialogFooter>
             </form>
           </>
         ) : (
           <div className="py-8 flex flex-col items-center justify-center text-center">
-            <div className="h-16 w-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center mb-4">
+            <div className="h-16 w-16 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full flex items-center justify-center mb-4">
               <CheckCircle className="h-8 w-8 text-white" />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">
               Request Submitted!
             </h3>
-            <p className="text-gray-300 mb-6">
+            <p className="text-slate-300 mb-6">
               Thank you for your interest. Our team will contact you shortly to
-              schedule your personalized demo.
+              schedule your personalized demo and get you started.
             </p>
             <Button
               onClick={resetForm}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-2 px-6 rounded-md transition-all duration-300"
+              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-300"
             >
               Submit Another Request
             </Button>

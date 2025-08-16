@@ -114,7 +114,14 @@ export default function InventoryPage() {
   }, [mobileDeConnected, baseDomain]);
 
   const handleBoostPost = (car: Car) => {
-    alert(`Boost post for ${car.make} ${car.model} not implemented yet.`);
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('selected_car_for_boost', JSON.stringify(car));
+      }
+      router.push('/dashboard/inventory/boost');
+    } catch (e) {
+      alert('Failed to start boost flow.');
+    }
   };
 
   return (
