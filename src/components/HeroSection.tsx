@@ -118,17 +118,21 @@ export default function HeroSection() {
       </div>
 
       {/* Content container */}
-      <div className="relative z-10 max-w-5xl mx-auto text-center px-4">
+      <div className="relative z-10 max-w-6xl mx-auto text-center px-4">
         <div
           className={`transition-all duration-1000 transform ${animationActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}
         >
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-violet-400 to-indigo-400 mb-6">
-            Automate Your Dealership Marketing
+          <div className="inline-flex items-center gap-3 px-3 py-1 rounded-full bg-purple-600/10 border border-purple-500/30 text-purple-200 text-xs md:text-sm mb-4">
+            <span>AI + Automation</span>
+            <span className="h-1 w-1 rounded-full bg-purple-400"></span>
+            <span>Dealership Growth</span>
+          </div>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-violet-400 to-indigo-400 mb-6 leading-tight">
+            Flexible AI marketing automation for dealerships
           </h1>
 
           <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-8 leading-relaxed">
-            Boost sales and capture more leads with our AI-powered marketing
-            automation platform designed specifically for car dealerships.
+            Build, optimize, and scale multi-channel campaigns. Autopost to social via visual workflows. Designed for speed and results.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
@@ -136,14 +140,14 @@ export default function HeroSection() {
               onClick={() => setIsFormOpen(true)}
               className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-6 rounded-lg text-lg font-medium transition-all duration-300 hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] hover:scale-105"
             >
-              Request Demo
+              Get a demo
             </Button>
 
             <Button
               variant="outline"
               className="border-purple-500 text-purple-400 hover:bg-purple-500/10 px-8 py-6 rounded-lg text-lg font-medium transition-all duration-300"
             >
-              Learn More
+              See how it works
             </Button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { FaFacebook, FaInstagram, FaStripe, FaCar } from 'react-icons/fa';
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import authManager from '@/lib/auth';
 
 export default function ConnectPage() {
   const [accounts, setAccounts] = useState<{
@@ -62,16 +63,9 @@ export default function ConnectPage() {
       setLoading(true);
       setError(null);
       try {
-        const token = localStorage.getItem('access_token');
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!token) {
-          throw new Error('No access token found. Please log in again.');
-        }
-        const res = await fetch(`${baseDomain}/api/social-accounts?user_id=${encodeURIComponent(userId!)}`, {
+        const res = await authManager.authenticatedFetch(`${baseDomain}/api/social-accounts?user_id=${encodeURIComponent(userId!)}`, {
           headers: {
             'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'x-refresh-token': `${refreshToken}`,
           },
         });
         if (!res.ok) {

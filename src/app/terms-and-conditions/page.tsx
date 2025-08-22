@@ -3,9 +3,12 @@ import React from "react";
 export default function TermsAndConditions(): JSX.Element {
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="container mx-auto px-4 py-16 max-w-4xl">
+      <div className="relative h-56 w-full bg-gradient-to-br from-purple-700/20 to-indigo-700/20 border-b border-purple-900/30 flex items-center justify-center">
+        <h1 className="text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">Terms & Conditions</h1>
+      </div>
+      <div className="container mx-auto px-4 py-12 md:py-16 max-w-4xl">
         <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-          Terms and Conditions
+          Overview
         </h1>
 
         <div className="space-y-8 text-gray-300 leading-relaxed">

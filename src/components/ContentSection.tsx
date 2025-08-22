@@ -72,7 +72,7 @@ const ContentSection = ({
     >
       <div className="container mx-auto max-w-6xl">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-purple-600">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
             {title}
           </h2>
           {subtitle && (
@@ -170,8 +170,8 @@ const ContentSection = ({
       </div>
 
       {/* Decorative elements */}
-      <div className="absolute -z-10 top-1/4 left-0 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl"></div>
-      <div className="absolute -z-10 bottom-1/4 right-0 w-96 h-96 bg-purple-800/20 rounded-full blur-3xl"></div>
+      <div className="absolute -z-10 top-1/4 left-0 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl"></div>
+      <div className="absolute -z-10 bottom-1/4 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl"></div>
     </section>
   );
 };

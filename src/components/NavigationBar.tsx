@@ -13,12 +13,9 @@ interface NavigationBarProps {
 export default function NavigationBar({
   logo = "/logo.svg",
   sections = [
-    { id: "product", label: "Product" },
-    { id: "use-cases", label: "Use Cases" },
+    { id: "integrations", label: "Product" },
+    { id: "features", label: "Use cases" },
     { id: "pricing", label: "Pricing" },
-    { id: "about", label: "About" },
-    { id: "contact", label: "Contact" },
-    { id: "how-it-works", label: "How It Works" },
   ],
 }: NavigationBarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -46,53 +43,58 @@ export default function NavigationBar({
   return (
     <nav
       className={cn(
-        "fixed top-0 left-0 w-full z-50 transition-all duration-300 bg-background",
+        "fixed top-0 left-0 w-full z-50 transition-all duration-300",
         isScrolled
-          ? "bg-black/80 backdrop-blur-md border-b border-purple-900/30 py-2"
+          ? "bg-slate-900/95 backdrop-blur-md border-b border-slate-700/50 py-3"
           : "bg-transparent py-4",
       )}
     >
-      <div className="container mx-auto px-4 flex justify-between items-center">
+      <div className="container mx-auto px-4 flex justify-between items-center max-w-7xl">
         {/* Logo */}
         <div className="flex items-center">
-          <img
-            src={logo}
-            alt="Company Logo"
-            className="h-8 w-auto"
-            onError={(e) => {
-              e.currentTarget.src =
-                "https://api.dicebear.com/7.x/identicon/svg?seed=automation";
-            }}
-          />
-          <span className="ml-2 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-600">
-            AutoDrive
+          <div className="w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-500 rounded-lg flex items-center justify-center mr-3">
+            <span className="text-white font-bold text-lg">S</span>
+          </div>
+          <span className="text-xl font-bold text-white">
+            ScriptiFlow
           </span>
         </div>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-6">
+        <div className="hidden md:flex items-center space-x-8">
           {sections.map((section) => (
             <button
               key={section.id}
               onClick={() => scrollToSection(section.id)}
-              className="text-gray-300 hover:text-purple-400 transition-colors relative group"
+              className="text-slate-300 hover:text-white transition-colors font-medium"
             >
               {section.label}
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-purple-500 group-hover:w-full transition-all duration-300"></span>
             </button>
           ))}
+          <button
+            onClick={() => scrollToSection("faq")}
+            className="text-slate-300 hover:text-white transition-colors font-medium"
+          >
+            Docs
+          </button>
+          <a
+            href="/login"
+            className="text-slate-300 hover:text-white transition-colors font-medium"
+          >
+            Sign in
+          </a>
           <Button
             variant="default"
-            className="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white border-none shadow-lg shadow-purple-900/20 hover:shadow-purple-900/40 transition-all"
-            onClick={() => scrollToSection("contact")}
+            className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold px-6 py-2 rounded-lg border-none transition-all"
+            onClick={() => scrollToSection("pricing")}
           >
-            Request Demo
+            Get Started
           </Button>
         </div>
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden text-gray-300 hover:text-purple-400 transition-colors"
+          className="md:hidden text-slate-300 hover:text-white transition-colors"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? (
@@ -105,23 +107,35 @@ export default function NavigationBar({
 
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-black/95 backdrop-blur-md border-b border-purple-900/30">
+        <div className="md:hidden bg-slate-900/95 backdrop-blur-md border-b border-slate-700/50">
           <div className="container mx-auto px-4 py-4 flex flex-col space-y-4">
             {sections.map((section) => (
               <button
                 key={section.id}
                 onClick={() => scrollToSection(section.id)}
-                className="text-gray-300 hover:text-purple-400 transition-colors py-2 text-left"
+                className="text-slate-300 hover:text-white transition-colors py-2 text-left font-medium"
               >
                 {section.label}
               </button>
             ))}
+            <button
+              onClick={() => scrollToSection("faq")}
+              className="text-slate-300 hover:text-white transition-colors py-2 text-left font-medium"
+            >
+              Docs
+            </button>
+            <a
+              href="/login"
+              className="text-slate-300 hover:text-white transition-colors py-2 font-medium"
+            >
+              Sign in
+            </a>
             <Button
               variant="default"
-              className="bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white border-none shadow-lg shadow-purple-900/20 hover:shadow-purple-900/40 transition-all w-full"
-              onClick={() => scrollToSection("contact")}
+              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold px-6 py-2 rounded-lg border-none transition-all w-full"
+              onClick={() => scrollToSection("pricing")}
             >
-              Request Demo
+              Get Started
             </Button>
           </div>
         </div>
