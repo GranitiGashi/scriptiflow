@@ -4,6 +4,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaCar } from 'react-icons/fa';
+import authManager from '@/lib/auth';
 
 interface Car {
   id: string;
@@ -33,23 +34,24 @@ export default function InventoryPage() {
   useEffect(() => {
     async function checkConnection() {
       try {
-        const token = localStorage.getItem('access_token');
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!token) throw new Error('No access token found. Please log in.');
-
-        const res = await fetch(`${baseDomain}/api/connect-mobile-de`, {
+        const res = await authManager.authenticatedFetch(`${baseDomain}/api/connect-mobile-de`, {
           headers: {
             Accept: 'application/json',
-            Authorization: `Bearer ${token}`,
-            'x-refresh-token': refreshToken || '',
           },
         });
 
         if (!res.ok) throw new Error('Please connect your mobile.de account.');
         setMobileDeConnected(true);
       } catch (err: any) {
+        console.error('Connection check failed:', err);
         setError(err.message);
-        router.push('/connect');
+        
+        // Auth manager will handle token refresh/login redirect automatically
+        if (err.message.includes('No valid access token')) {
+          setError('Session expired. Please log in again.');
+        } else {
+          router.push('/connect');
+        }
       }
     }
 
@@ -64,15 +66,9 @@ export default function InventoryPage() {
       setLoading(true);
       setError(null);
       try {
-        const token = localStorage.getItem('access_token');
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!token) throw new Error('No access token found. Please log in.');
-
-        const res = await fetch(`${baseDomain}/api/get-user-cars`, {
+        const res = await authManager.authenticatedFetch(`${baseDomain}/api/get-user-cars`, {
           headers: {
             Accept: 'application/json',
-            Authorization: `Bearer ${token}`,
-            'x-refresh-token': refreshToken || '',
           },
         });
 

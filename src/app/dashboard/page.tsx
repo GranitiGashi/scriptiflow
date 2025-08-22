@@ -1,41 +1,79 @@
 import React from 'react';
-import DashboardLayout from '../../components/DashboardLayout'
+import DashboardLayout from '../../components/DashboardLayout';
+import AccountSetupProgress from '../../components/AccountSetupProgress';
+import DashboardCues from '../../components/DashboardCues';
+import AppBoxes from '../../components/AppBoxes';
 
 const Dashboard: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Quick Access App Boxes */}
+        <AppBoxes />
+
+        {/* Account Setup Progress */}
+        <AccountSetupProgress />
+
+        {/* Dashboard Cues - What You Can Do */}
+        <DashboardCues />
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold">Total Users</h3>
-            <p className="text-3xl font-bold text-blue-600">1,234</p>
-            <p className="text-green-500">
-              <i className="fas fa-arrow-up mr-1"></i>12% this month
+            <h3 className="text-lg font-semibold">Total Cars</h3>
+            <p className="text-3xl font-bold text-blue-600">--</p>
+            <p className="text-gray-500">
+              <i className="fas fa-car mr-1"></i>Connect mobile.de to view
             </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold">Revenue</h3>
-            <p className="text-3xl font-bold text-blue-600">$12,345</p>
-            <p className="text-green-500">
-              <i className="fas fa-arrow-up mr-1"></i>8% this month
+            <h3 className="text-lg font-semibold">Active Campaigns</h3>
+            <p className="text-3xl font-bold text-blue-600">--</p>
+            <p className="text-gray-500">
+              <i className="fas fa-bullhorn mr-1"></i>Connect social media to start
             </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold">Active Sessions</h3>
-            <p className="text-3xl font-bold text-blue-600">456</p>
-            <p className="text-red-500">
-              <i className="fas fa-arrow-down mr-1"></i>5% this month
+            <h3 className="text-lg font-semibold">Ad Spend (This Month)</h3>
+            <p className="text-3xl font-bold text-blue-600">€--</p>
+            <p className="text-gray-500">
+              <i className="fas fa-euro-sign mr-1"></i>Setup payments to track
             </p>
           </div>
         </div>
 
-        {/* Charts or Other Content */}
+        {/* Quick Actions */}
         <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-4">User Activity</h3>
-          <div className="h-64">
-            {/* Add Chart.js or other chart library here */}
-            <p className="text-gray-500">Chart placeholder</p>
+          <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a
+              href="/dashboard/inventory"
+              className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <i className="fas fa-car text-2xl text-green-600 mb-2"></i>
+              <span className="text-sm font-medium">View Inventory</span>
+            </a>
+            <a
+              href="/dashboard/social-media"
+              className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <i className="fas fa-bullhorn text-2xl text-orange-600 mb-2"></i>
+              <span className="text-sm font-medium">Manage Ads</span>
+            </a>
+            <a
+              href="/dashboard/social-media"
+              className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <i className="fas fa-link text-2xl text-blue-600 mb-2"></i>
+              <span className="text-sm font-medium">Connections</span>
+            </a>
+            <a
+              href="/stripe/connect"
+              className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <i className="fas fa-credit-card text-2xl text-purple-600 mb-2"></i>
+              <span className="text-sm font-medium">Payments</span>
+            </a>
           </div>
         </div>
       </div>

@@ -16,6 +16,9 @@ export interface User {
 export interface LoginResponse {
   access_token: string;
   refresh_token: string;
+  expires_at: number;
+  expires_in: number;
+  status: string;
   user: User;
 }
 
@@ -63,6 +66,7 @@ const LoginForm: React.FC = () => {
 
       localStorage.setItem("access_token", response.data?.access_token);
       localStorage.setItem("refresh_token", response.data?.refresh_token);
+      localStorage.setItem("expires_at", response.data?.expires_at?.toString() || '');
       localStorage.setItem("user", JSON.stringify(response.data.user));
       localStorage.setItem("role", response.data.user.role);
 

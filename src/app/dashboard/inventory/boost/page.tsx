@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useRouter } from 'next/navigation';
+import authManager from '@/lib/auth';
 
 type Car = {
   id: string;
@@ -52,38 +53,37 @@ export default function BoostPage() {
     }
   }, [router]);
 
-//   useEffect(() => {
-//     if (car && !plan && !loadingAI) {
-//       // Auto-generate once when car loads
-//       fetchRecommendation();
-//     }
-//     // eslint-disable-next-line react-hooks/exhaustive-deps
-//   }, [car]);
+  useEffect(() => {
+    if (car && !plan && !loadingAI) {
+      // Auto-generate once when car loads
+      fetchRecommendation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [car]);
 
   useEffect(() => {
     async function loadAdAccounts() {
       try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-        const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
-        if (!token) throw new Error('Not authenticated');
-        const res = await fetch(`${baseDomain}/api/ads/ad-accounts`, {
+        // Use auth manager for automatic token refresh
+        const res = await authManager.authenticatedFetch(`${baseDomain}/api/ads/ad-accounts`, {
           headers: {
             Accept: 'application/json',
-            Authorization: `Bearer ${token}`,
-            'x-refresh-token': refreshToken || ''
           }
         });
+        
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           const message = (errData as any).error || 'Failed to load ad accounts';
           setAdAccountsError(message);
+          
           // If FB token missing, try to fetch login URL to help user connect
           if (String(message).toLowerCase().includes('facebook user token not found')) {
             try {
               const userString = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
               const user = userString ? JSON.parse(userString) : null;
-              const loginRes = await fetch(`${baseDomain}/api/fb/login-url?user_id=${encodeURIComponent(user?.id || '')}`, {
-                headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+              const loginRes = await authManager.authenticatedFetch(
+                `${baseDomain}/api/fb/login-url?user_id=${encodeURIComponent(user?.id || '')}`, {
+                headers: { Accept: 'application/json' },
               });
               if (loginRes.ok) {
                 const loginData = await loginRes.json();
@@ -93,12 +93,19 @@ export default function BoostPage() {
           }
           return;
         }
+        
         const data = await res.json();
         const list: AdAccount[] = data?.data || data || [];
         setAdAccounts(list);
         if (list.length > 0) setSelectedAdAccount(list[0].id);
       } catch (e: any) {
+        console.error('Error loading ad accounts:', e);
         setAdAccountsError(e.message || 'Failed to load ad accounts');
+        
+        // If it's an authentication error, the auth manager will handle redirecting to login
+        if (e.message.includes('No valid access token')) {
+          setAdAccountsError('Session expired. Please log in again.');
+        }
       }
     }
     loadAdAccounts();
@@ -122,88 +129,88 @@ export default function BoostPage() {
     };
   }, [car]);
 
-//   async function fetchRecommendation() {
-//     if (!mainData) return;
-//     setLoadingAI(true);
-//     setAiError('');
-//     try {
-//       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-//       const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
-//       if (!token) throw new Error('Not authenticated');
-//       const res = await fetch(`${baseDomain}/api/ads/recommendation`, {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//           Accept: 'application/json',
-//           Authorization: `Bearer ${token}`,
-//           'x-refresh-token': refreshToken || ''
-//         },
-//         body: JSON.stringify({ car: mainData, objective: 'auto', country: 'DE', language: 'de' })
-//       });
-//       if (!res.ok) {
-//         const err = await res.json().catch(() => ({}));
-//         throw new Error((err as any).error || 'Failed to get recommendation');
-//       }
-//       const data = await res.json();
-//       const proposal = data?.proposal || data;
+  async function fetchRecommendation() {
+    if (!mainData) return;
+    setLoadingAI(true);
+    setAiError('');
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
+      if (!token) throw new Error('Not authenticated');
+      const res = await fetch(`${baseDomain}/api/ads/recommendation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+          'x-refresh-token': refreshToken || ''
+        },
+        body: JSON.stringify({ car: mainData, objective: 'auto', country: 'DE', language: 'de' })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any).error || 'Failed to get recommendation');
+      }
+      const data = await res.json();
+      const proposal = data?.proposal || data;
 
-//       const mapObjective = (obj?: string) => {
-//         const key = (obj || '').toLowerCase();
-//         if (key.includes('lead')) return 'LEAD_GENERATION';
-//         if (key.includes('message')) return 'MESSAGES';
-//         if (key.includes('traffic') || key.includes('click')) return 'LINK_CLICKS';
-//         return 'LINK_CLICKS';
-//       };
+      const mapObjective = (obj?: string) => {
+        const key = (obj || '').toLowerCase();
+        if (key.includes('lead')) return 'LEAD_GENERATION';
+        if (key.includes('message')) return 'MESSAGES';
+        if (key.includes('traffic') || key.includes('click')) return 'LINK_CLICKS';
+        return 'LINK_CLICKS';
+      };
 
-//       // Handle different key names from AI
-//       const durationDays = proposal.duration_days || proposal.recommended_duration || 7;
-//       const dailyBudgetEur = proposal.daily_budget_eur ?? proposal.daily_budget ?? (proposal.daily_budget_cents ? (Number(proposal.daily_budget_cents) / 100) : 10);
+      // Handle different key names from AI
+      const durationDays = proposal.duration_days || proposal.recommended_duration || 7;
+      const dailyBudgetEur = proposal.daily_budget_eur ?? proposal.daily_budget ?? (proposal.daily_budget_cents ? (Number(proposal.daily_budget_cents) / 100) : 10);
 
-//       // Convert target audience (best-effort) -> FB targeting
-//       const ta = proposal.targeting || proposal.target_audience;
-//       let targeting: any = undefined;
-//       if (ta) {
-//         targeting = { geo_locations: { countries: [proposal.country || 'DE'] } };
-//         const age = typeof ta.age === 'string' ? ta.age : undefined;
-//         if (age && age.includes('-')) {
-//           const [min, max] = age.split('-').map((n: string) => Number(n.trim()));
-//           if (!Number.isNaN(min)) targeting.age_min = min;
-//           if (!Number.isNaN(max)) targeting.age_max = max;
-//         }
-//         const gender = (ta.gender || '').toLowerCase();
-//         if (gender === 'male') targeting.genders = [1];
-//         if (gender === 'female') targeting.genders = [2];
-//         // interests would require FB interest IDs; skip for now
-//       }
+      // Convert target audience (best-effort) -> FB targeting
+      const ta = proposal.targeting || proposal.target_audience;
+      let targeting: any = undefined;
+      if (ta) {
+        targeting = { geo_locations: { countries: [proposal.country || 'DE'] } };
+        const age = typeof ta.age === 'string' ? ta.age : undefined;
+        if (age && age.includes('-')) {
+          const [min, max] = age.split('-').map((n: string) => Number(n.trim()));
+          if (!Number.isNaN(min)) targeting.age_min = min;
+          if (!Number.isNaN(max)) targeting.age_max = max;
+        }
+        const gender = (ta.gender || '').toLowerCase();
+        if (gender === 'male') targeting.genders = [1];
+        if (gender === 'female') targeting.genders = [2];
+        // interests would require FB interest IDs; skip for now
+      }
 
-//       setPlan({
-//         objective: mapObjective(proposal.objective),
-//         duration_days: Number(durationDays) || 7,
-//         daily_budget_cents: Math.round(Number(dailyBudgetEur || 10) * 100),
-//         targeting,
-//         country: proposal.country || 'DE'
-//       });
+      setPlan({
+        objective: mapObjective(proposal.objective),
+        duration_days: Number(durationDays) || 7,
+        daily_budget_cents: Math.round(Number(dailyBudgetEur || 10) * 100),
+        targeting,
+        country: proposal.country || 'DE'
+      });
 
-//       const creativeSrc = proposal.creative || proposal.ad_creative || {};
-//       const cta = creativeSrc.CTA || creativeSrc.cta || 'LEARN_MORE';
-//       setCreative({
-//         campaign_name: proposal.campaign_name || `${mainData.title} Campaign`,
-//         adset_name: proposal.adset_name || `${mainData.title} Ad Set`,
-//         ad_name: proposal.ad_name || `${mainData.title} Ad`,
-//         primary_text: creativeSrc.primary_text || `Check out this ${mainData.title}!`,
-//         headline: creativeSrc.headline || mainData.title,
-//         description: creativeSrc.description || mainData.description || '',
-//         cta,
-//         image_url: mainData.image_url,
-//         url: mainData.url,
-//         page_id: proposal.page_id || ''
-//       });
-//     } catch (e: any) {
-//       setAiError(e.message || 'Failed to get recommendation');
-//     } finally {
-//       setLoadingAI(false);
-//     }
-//   }
+      const creativeSrc = proposal.creative || proposal.ad_creative || {};
+      const cta = creativeSrc.CTA || creativeSrc.cta || 'LEARN_MORE';
+      setCreative({
+        campaign_name: proposal.campaign_name || `${mainData.title} Campaign`,
+        adset_name: proposal.adset_name || `${mainData.title} Ad Set`,
+        ad_name: proposal.ad_name || `${mainData.title} Ad`,
+        primary_text: creativeSrc.primary_text || `Check out this ${mainData.title}!`,
+        headline: creativeSrc.headline || mainData.title,
+        description: creativeSrc.description || mainData.description || '',
+        cta,
+        image_url: mainData.image_url,
+        url: mainData.url,
+        page_id: proposal.page_id || ''
+      });
+    } catch (e: any) {
+      setAiError(e.message || 'Failed to get recommendation');
+    } finally {
+      setLoadingAI(false);
+    }
+  }
 
   async function handleLaunch() {
     if (!selectedAdAccount) {
@@ -277,9 +284,9 @@ export default function BoostPage() {
           <div className="bg-white rounded-xl shadow p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">AI Recommendation</h3>
-              {/* <button onClick={fetchRecommendation} disabled={loadingAI || !car} className="bg-black text-white px-3 py-2 rounded disabled:opacity-60">
+              <button onClick={fetchRecommendation} disabled={loadingAI || !car} className="bg-black text-white px-3 py-2 rounded disabled:opacity-60">
                 {loadingAI ? 'Generating…' : 'Generate with AI'}
-              </button> */}
+              </button>
             </div>
             {aiError && <div className="text-red-600 text-sm mb-2">{aiError}</div>}
 
