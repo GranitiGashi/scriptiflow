@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useRouter } from 'next/navigation';
 import authManager from '@/lib/auth';
+import AgencyPaymentForm from '@/components/AgencyPaymentForm';
 
 type Car = {
   id: string;
@@ -37,7 +38,10 @@ export default function BoostPage() {
   const [creative, setCreative] = useState<any>({});
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string>('');
-  const [serviceFee, setServiceFee] = useState<number>(0);
+  const [serviceFee, setServiceFee] = useState<number>(20); // Default €20 service fee
+  const [adBudget, setAdBudget] = useState<number>(100); // Default €100 ad spend
+  const [campaignDuration, setCampaignDuration] = useState<number>(7); // Default 7 days
+  const [socialAccounts, setSocialAccounts] = useState<any>(null);
 
   useEffect(() => {
     const raw = typeof window !== 'undefined' ? sessionStorage.getItem('selected_car_for_boost') : null;
@@ -108,7 +112,29 @@ export default function BoostPage() {
         }
       }
     }
+
+    async function loadSocialAccounts() {
+      try {
+        const res = await authManager.authenticatedFetch(`${baseDomain}/api/social/accounts`, {
+          headers: {
+            Accept: 'application/json'
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSocialAccounts(data);
+          // Auto-populate page_id if Facebook is connected
+          if (data?.facebook_id && !creative.page_id) {
+            setCreative((c: any) => ({ ...(c || {}), page_id: data.facebook_id }));
+          }
+        }
+      } catch (e: any) {
+        console.error('Failed to load social accounts:', e);
+      }
+    }
+
     loadAdAccounts();
+    loadSocialAccounts();
   }, [baseDomain]);
 
   const mainData = useMemo(() => {
@@ -235,7 +261,14 @@ export default function BoostPage() {
           Authorization: `Bearer ${token}`,
           'x-refresh-token': refreshToken || ''
         },
-        body: JSON.stringify({ ad_account_id: selectedAdAccount, plan, creative, charge_amount_cents: serviceFee > 0 ? Math.round(serviceFee * 100) : 0 })
+        body: JSON.stringify({ 
+          ad_account_id: selectedAdAccount, 
+          plan: { ...plan, daily_budget_cents: Math.round((adBudget * 100) / campaignDuration) }, 
+          creative, 
+          total_budget_cents: Math.round(adBudget * 100),
+          service_fee_cents: Math.round(serviceFee * 100),
+          campaign_duration_days: campaignDuration
+        })
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -345,10 +378,39 @@ export default function BoostPage() {
               </div>
               <div>
                 <label className="block text-sm text-gray-600">Facebook Page ID</label>
-                <input value={creative?.page_id || ''} onChange={(e) => setCreative((c: any) => ({ ...(c || {}), page_id: e.target.value }))} className="w-full border rounded p-2" placeholder="1234567890" />
+                <div className="relative">
+                  <input 
+                    value={creative?.page_id || ''} 
+                    onChange={(e) => setCreative((c: any) => ({ ...(c || {}), page_id: e.target.value }))} 
+                    className="w-full border rounded p-2" 
+                    placeholder="1234567890" 
+                  />
+                  {socialAccounts?.facebook_id && (
+                    <div className="text-xs text-green-600 mt-1 flex items-center">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Auto-populated from your connected Facebook page
+                    </div>
+                  )}
+                  {!socialAccounts?.facebook_id && (
+                    <div className="text-xs text-amber-600 mt-1">
+                      Connect Facebook to auto-populate this field
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
+
+          <AgencyPaymentForm
+            adBudget={adBudget}
+            setAdBudget={setAdBudget}
+            serviceFee={serviceFee}
+            setServiceFee={setServiceFee}
+            campaignDuration={campaignDuration}
+            setCampaignDuration={setCampaignDuration}
+          />
 
           <div className="bg-white rounded-xl shadow p-4 sm:p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -370,9 +432,15 @@ export default function BoostPage() {
                 )}
               </div>
               <div>
-                <label className="block text-sm text-gray-600">Service Fee (EUR)</label>
-                <input type="number" min={0} step={1} value={serviceFee} onChange={(e) => setServiceFee(Number(e.target.value))} className="w-full border rounded p-2" placeholder="0" />
-                <p className="text-xs text-gray-500 mt-1">If set, this will be charged from your saved card before creating the campaign.</p>
+                <label className="block text-sm text-gray-600">Campaign Summary</label>
+                <div className="bg-blue-50 rounded-lg p-3 text-sm">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>Ad Budget: €{adBudget}</div>
+                    <div>Service Fee: €{serviceFee}</div>
+                    <div>Duration: {campaignDuration} days</div>
+                    <div className="font-semibold">Total: €{adBudget + serviceFee}</div>
+                  </div>
+                </div>
               </div>
             </div>
 

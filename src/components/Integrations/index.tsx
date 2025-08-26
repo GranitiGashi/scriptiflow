@@ -281,7 +281,7 @@ export default function ConnectPage() {
     () => [
       {
         name: 'Facebook',
-        description: 'Manage and post to your Facebook Pages.',
+        description: 'Connect your Facebook Page for our agency to run ads on your behalf.',
         icon: <FaFacebook className="text-blue-600 text-4xl" />,
         href: loginUrl,
         connected: !!accounts?.facebook_id,
@@ -291,7 +291,7 @@ export default function ConnectPage() {
       },
       {
         name: 'Instagram',
-        description: 'Link your Instagram Business account.',
+        description: 'Connect your Instagram Business account for cross-platform advertising.',
         icon: <FaInstagram className="text-pink-500 text-4xl" />,
         href: loginUrl,
         connected: !!accounts?.instagram_id,
