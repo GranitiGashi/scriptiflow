@@ -39,6 +39,7 @@ export default function ConnectPage() {
   const [mobileDeUsername, setMobileDeUsername] = useState<string>('');
   const [mobileDePassword, setMobileDePassword] = useState<string>('');
   const [mobileDeCompanyName, setMobileDeCompanyName] = useState<string>('');
+  const [stripe, setStripe] = useState<{ connected: boolean; cardBrand: string | null; last4: string | null }>({ connected: false, cardBrand: null, last4: null });
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -123,6 +124,40 @@ export default function ConnectPage() {
       }
     }
 
+    async function fetchStripeStatus() {
+      try {
+        const res = await authManager.authenticatedFetch(`${baseDomain}/api/stripe/status`, {
+          headers: { 'Accept': 'application/json' },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.connected) {
+            // Fetch card details for nicer UI
+            const cardRes = await authManager.authenticatedFetch(`${baseDomain}/api/payment-method`, {
+              headers: { 'Accept': 'application/json' },
+            });
+            if (cardRes.ok) {
+              const cardData = await cardRes.json();
+              setStripe({
+                connected: true,
+                cardBrand: cardData?.card?.brand || null,
+                last4: cardData?.card?.last4 || null,
+              });
+            } else {
+              setStripe({ connected: true, cardBrand: null, last4: null });
+            }
+          } else {
+            setStripe({ connected: false, cardBrand: null, last4: null });
+          }
+        } else {
+          setStripe({ connected: false, cardBrand: null, last4: null });
+        }
+      } catch (err) {
+        console.error('❌ Failed to fetch Stripe status', err);
+        setStripe({ connected: false, cardBrand: null, last4: null });
+      }
+    }
+
     async function fetchLoginUrl() {
       try {
         const token = localStorage.getItem('access_token');
@@ -148,6 +183,7 @@ export default function ConnectPage() {
 
     fetchSocialStatus();
     fetchMobileDeStatus();
+    fetchStripeStatus();
     fetchLoginUrl();
   }, [userId, baseDomain]);
 
@@ -313,14 +349,16 @@ export default function ConnectPage() {
         name: 'Stripe',
         description: 'Connect your Stripe account to accept payments.',
         icon: <FaStripe className="text-purple-600 text-4xl" />,
-        href: '/stripe/connect',
-        connected: typeof window !== 'undefined' && (localStorage.getItem('stripe_connected') === 'true' || searchParams.get('connected') === 'stripe'),
-        nameOrUsername: 'Stripe',
+        href: '/dashboard/payments/save-card',
+        connected: stripe.connected,
+        nameOrUsername: stripe.connected
+          ? `${stripe.cardBrand ? stripe.cardBrand.toUpperCase() : 'Card'}${stripe.last4 ? ' •••• ' + stripe.last4 : ''}`
+          : null,
         profilePicture: null,
         bg: 'bg-purple-50 hover:bg-purple-100',
       },
     ],
-    [loginUrl, accounts, mobileDe]
+    [loginUrl, accounts, mobileDe, stripe]
   );
 
   return (
@@ -375,23 +413,54 @@ export default function ConnectPage() {
                   </div>
                 </div>
                 {integration.connected ? (
-                  
                   <div className="flex space-x-2">
                     <span className="flex-1 bg-green-500 text-white text-sm font-medium py-2 px-4 rounded text-center">
                       Connected
                     </span>
-                    <button
-                      onClick={() =>
-                        integration.name === 'mobile.de'
-                          ? handleMobileDeDisconnect()
-                          : alert(`Disconnect ${integration.name} not implemented yet`)
-                      }
-                      className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 px-4 rounded transition"
-                    >
-                      Disconnect
-                    </button>
+                    {integration.name === 'Stripe' ? (
+                      <>
+                        <button
+                          onClick={() => router.push('/dashboard/payments/save-card')}
+                          className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium py-2 px-4 rounded transition"
+                        >
+                          Manage
+                        </button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await authManager.authenticatedFetch(`${baseDomain}/api/payment-method`, {
+                                method: 'DELETE',
+                                headers: { 'Accept': 'application/json' },
+                              });
+                              if (res.ok) {
+                                setStripe({ connected: false, cardBrand: null, last4: null });
+                              } else {
+                                const errData = await res.json();
+                                alert(errData.error || 'Failed to disconnect Stripe');
+                              }
+                            } catch (e) {
+                              console.error('❌ Failed to disconnect Stripe', e);
+                              alert('Failed to disconnect Stripe');
+                            }
+                          }}
+                          className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 px-4 rounded transition"
+                        >
+                          Disconnect
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          integration.name === 'mobile.de'
+                            ? handleMobileDeDisconnect()
+                            : alert(`Disconnect ${integration.name} not implemented yet`)
+                        }
+                        className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 px-4 rounded transition"
+                      >
+                        Disconnect
+                      </button>
+                    )}
                   </div>
-                  
                 ) : (
                   <button
                     onClick={() =>

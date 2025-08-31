@@ -1,10 +1,20 @@
+'use client';
 import React from 'react';
 import DashboardLayout from '../../components/DashboardLayout';
 import AccountSetupProgress from '../../components/AccountSetupProgress';
 import DashboardCues from '../../components/DashboardCues';
 import AppBoxes from '../../components/AppBoxes';
+import { useEffect, useState } from 'react';
+import authManager from '@/lib/auth';
 
 const Dashboard: React.FC = () => {
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedRole = localStorage.getItem('role');
+    setRole(storedRole);
+  }, []);
+
   return (
     <DashboardLayout>
       <div className="space-y-6">

@@ -36,10 +36,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navMap: Record<string, NavItem[]> = {
     admin: [
       { name: "Admin Dashboard", path: "/dashboard/admin", icon: "fas fa-crown" },
+      { name: "Add Apps", path: "/dashboard/admin/apps", icon: "fas fa-cubes" },
       { name: "Register", path: "/Admin/register/", icon: "fas fa-users" },
     ],
     client: [
-      { name: "Social Media", path: "/dashboard/social-media", icon: "fab fa-facebook" },
+      { name: "Integrations", path: "/dashboard/social-media", icon: "fab fa-facebook" },
       {name: "My Inventory", path: "/dashboard/inventory",icon: "fab fa-facebook"},
     ],
   };

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FaCheckCircle, FaCircle, FaStripe, FaCar, FaFacebook, FaInstagram } from 'react-icons/fa';
+import { FaCheckCircle, FaCircle, FaStripe, FaCar, FaFacebook, FaInstagram, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { Progress } from '@/components/ui/progress';
 import authManager from '@/lib/auth';
 
@@ -30,6 +30,7 @@ export default function AccountSetupProgress() {
     instagram: false,
   });
   const [loading, setLoading] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
 
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
 
@@ -39,10 +40,20 @@ export default function AccountSetupProgress() {
 
   const checkConnectionStatus = async () => {
     try {
-      // Check Stripe connection
-      const stripeConnected = typeof window !== 'undefined' 
-        ? localStorage.getItem('stripe_connected') === 'true'
-        : false;
+      // Check Stripe connection via API
+      let stripeConnected = false;
+      try {
+        const stripeRes = await authManager.authenticatedFetch(
+          `${baseDomain}/api/stripe/status`,
+          { headers: { Accept: 'application/json' } }
+        );
+        if (stripeRes.ok) {
+          const stripeData = await stripeRes.json();
+          stripeConnected = !!stripeData.connected;
+        }
+      } catch (e) {
+        console.log('Stripe status check failed:', e);
+      }
 
       // Get user ID from localStorage
       const userString = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
@@ -56,7 +67,7 @@ export default function AccountSetupProgress() {
         // Check social connections (Facebook, Instagram)
         try {
           const socialRes = await authManager.authenticatedFetch(
-            `${baseDomain}/api/social/accounts?user_id=${encodeURIComponent(userId)}`, 
+            `${baseDomain}/api/social-accounts?user_id=${encodeURIComponent(userId)}`,
             { headers: { Accept: 'application/json' } }
           );
           
@@ -74,7 +85,7 @@ export default function AccountSetupProgress() {
         // Check mobile.de connection
         try {
           const mobileRes = await authManager.authenticatedFetch(
-            `${baseDomain}/api/mobilede/connect-mobile-de`, 
+            `${baseDomain}/api/connect-mobile-de`,
             { headers: { Accept: 'application/json' } }
           );
           mobiledeConnected = mobileRes.ok;
@@ -134,6 +145,11 @@ export default function AccountSetupProgress() {
   const completedSteps = steps.filter(step => step.completed).length;
   const progressPercentage = (completedSteps / steps.length) * 100;
 
+  useEffect(() => {
+    // Auto-collapse when everything is completed; expand otherwise
+    setCollapsed(completedSteps === steps.length);
+  }, [completedSteps, steps.length]);
+
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-sm p-6">
@@ -150,10 +166,7 @@ export default function AccountSetupProgress() {
     );
   }
 
-  // Don't show if setup is complete
-  if (completedSteps === steps.length) {
-    return null;
-  }
+  // Always show the setup card, even when fully completed (shows 100%)
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
@@ -161,56 +174,69 @@ export default function AccountSetupProgress() {
         <h3 className="text-lg font-semibold text-gray-800">
           Finish Setting Up Your Account
         </h3>
-        <span className="text-sm text-gray-500">
-          {completedSteps} of {steps.length} completed
-        </span>
+        <div className="flex items-center space-x-3">
+          <span className="text-sm text-gray-500">
+            {completedSteps} of {steps.length} completed
+          </span>
+          {completedSteps === steps.length && (
+            <button
+              onClick={() => setCollapsed(prev => !prev)}
+              className="flex items-center px-2 py-1 text-xs rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              {collapsed ? (
+                <>
+                  <FaChevronDown className="mr-1" /> Show
+                </>
+              ) : (
+                <>
+                  <FaChevronUp className="mr-1" /> Hide
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="mb-6">
-        <Progress value={progressPercentage} className="h-2" />
-        <p className="text-sm text-gray-600 mt-2">
-          Complete these steps to unlock all features
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        {steps.map((step) => (
-          <div
-            key={step.id}
-            className={`flex items-center justify-between p-4 rounded-lg border ${
-              step.completed
-                ? 'bg-green-50 border-green-200'
-                : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-            } transition-colors`}
-          >
-            <div className="flex items-center space-x-4">
-              <div className="flex-shrink-0">
-                {step.completed ? (
-                  <FaCheckCircle className="text-green-500 text-xl" />
-                ) : (
-                  <FaCircle className="text-gray-400 text-xl" />
-                )}
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="text-2xl">{step.icon}</div>
-                <div>
-                  <h4 className="font-medium text-gray-900">{step.title}</h4>
-                  <p className="text-sm text-gray-600">{step.description}</p>
+      {!collapsed && (
+        <div className="space-y-4">
+          {steps.map((step) => (
+            <div
+              key={step.id}
+              className={`flex items-center justify-between p-4 rounded-lg border ${
+                step.completed
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+              } transition-colors`}
+            >
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0">
+                  {step.completed ? (
+                    <FaCheckCircle className="text-green-500 text-xl" />
+                  ) : (
+                    <FaCircle className="text-gray-400 text-xl" />
+                  )}
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="text-2xl">{step.icon}</div>
+                  <div>
+                    <h4 className="font-medium text-gray-900">{step.title}</h4>
+                    <p className="text-sm text-gray-600">{step.description}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {!step.completed && (
-              <a
-                href={step.actionUrl}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                {step.actionText}
-              </a>
-            )}
-          </div>
-        ))}
-      </div>
+              {!step.completed && (
+                <a
+                  href={step.actionUrl}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  {step.actionText}
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {completedSteps > 0 && completedSteps < steps.length && (
         <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">

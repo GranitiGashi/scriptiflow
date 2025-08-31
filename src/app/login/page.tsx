@@ -136,6 +136,9 @@ const LoginForm: React.FC = () => {
                   onChange={handleChange}
                   required
                 />
+                <div className="mt-2 text-right">
+                  <a href="/auth/forgot-password" className="text-xs text-purple-300 hover:text-purple-200">Forgot password?</a>
+                </div>
               </div>
               <button
                 type="submit"

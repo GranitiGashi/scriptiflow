@@ -27,6 +27,7 @@ type AppFormData = {
 export default function AppBoxes() {
   const [apps, setApps] = useState<UserApp[]>([]);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingApp, setEditingApp] = useState<UserApp | null>(null);
   const [formData, setFormData] = useState<AppFormData>({
@@ -40,6 +41,8 @@ export default function AppBoxes() {
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
 
   useEffect(() => {
+    const storedRole = localStorage.getItem('role');
+    setRole(storedRole);
     fetchUserApps();
   }, []);
 
@@ -62,92 +65,13 @@ export default function AppBoxes() {
     }
   };
 
-  const handleAddApp = () => {
-    setEditingApp(null);
-    setFormData({
-      name: '',
-      icon_url: '',
-      external_url: '',
-      background_color: '#f3f4f6',
-      text_color: '#374151',
-    });
-    setShowAddForm(true);
-  };
+  const handleAddApp = () => {};
 
-  const handleEditApp = (app: UserApp) => {
-    setEditingApp(app);
-    setFormData({
-      name: app.name,
-      icon_url: app.icon_url || '',
-      external_url: app.external_url,
-      background_color: app.background_color,
-      text_color: app.text_color,
-    });
-    setShowAddForm(true);
-  };
+  const handleEditApp = (app: UserApp) => {};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name || !formData.external_url) {
-      alert('Name and URL are required');
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); };
 
-    try {
-      let payload: any = {
-        ...formData,
-        position: editingApp ? editingApp.position : apps.length + 1,
-      };
-
-      if (editingApp) {
-        payload.id = editingApp.id;
-      }
-
-      const res = await authManager.authenticatedFetch(`${baseDomain}/api/user/apps`, {
-        method: editingApp ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        await fetchUserApps();
-        setShowAddForm(false);
-        setEditingApp(null);
-      } else {
-        const error = await res.json();
-        alert(error.error || 'Failed to save app');
-      }
-    } catch (error) {
-      console.error('Error saving app:', error);
-      alert('Failed to save app');
-    }
-  };
-
-  const handleDeleteApp = async (app: UserApp) => {
-    if (!confirm(`Are you sure you want to delete "${app.name}"?`)) {
-      return;
-    }
-
-    try {
-      const res = await authManager.authenticatedFetch(`${baseDomain}/api/user/apps/${app.id}`, {
-        method: 'DELETE',
-        headers: { Accept: 'application/json' }
-      });
-
-      if (res.ok) {
-        await fetchUserApps();
-      } else {
-        alert('Failed to delete app');
-      }
-    } catch (error) {
-      console.error('Error deleting app:', error);
-      alert('Failed to delete app');
-    }
-  };
+  const handleDeleteApp = async (app: UserApp) => {};
 
   const openApp = (url: string) => {
     if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -176,13 +100,6 @@ export default function AppBoxes() {
     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-800">Quick Access</h3>
-        <button
-          onClick={handleAddApp}
-          className="flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <FaPlus className="mr-2" />
-          Add App
-        </button>
       </div>
 
       {/* App Grid */}
@@ -235,35 +152,9 @@ export default function AppBoxes() {
               </span>
               <FaExternalLinkAlt className="absolute top-1 right-1 text-xs opacity-0 group-hover:opacity-50 transition-opacity" />
               
-              {/* Admin-created lock indicator */}
-              {app.is_admin_created && (
-                <FaLock className="absolute top-1 right-1 text-xs opacity-70" />
-              )}
             </div>
 
-            {/* Edit/Delete buttons - only for non-admin apps */}
-            {!app.is_admin_created && (
-              <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditApp(app);
-                  }}
-                  className="w-6 h-6 bg-gray-800 text-white rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
-                >
-                  <FaEdit className="text-xs" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteApp(app);
-                  }}
-                  className="w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
-                >
-                  <FaTrash className="text-xs" />
-                </button>
-              </div>
-            )}
+            {/* Admin editing disabled in this grid; use admin Add Apps page */}
 
             {/* Admin-created tooltip */}
             {app.is_admin_created && (
@@ -276,15 +167,6 @@ export default function AppBoxes() {
         )}
       </div>
 
-      {/* Info about admin apps */}
-      {apps.some(app => app.is_admin_created) && (
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="text-sm text-blue-800 flex items-center">
-            <FaLock className="mr-2" />
-            <strong>Apps with locks</strong> are managed by your administrator and cannot be edited or removed.
-          </p>
-        </div>
-      )}
 
       {/* Add/Edit Form Modal */}
       {showAddForm && (

@@ -56,10 +56,19 @@ export default function DashboardCues() {
 
   const checkSystemStatus = async () => {
     try {
-      // Check Stripe connection
-      const stripeConnected = typeof window !== 'undefined' 
-        ? localStorage.getItem('stripe_connected') === 'true'
-        : false;
+      // Check Stripe connection via API
+      let stripeConnected = false;
+      try {
+        const stripeRes = await authManager.authenticatedFetch(`${baseDomain}/api/stripe/status`, {
+          headers: { Accept: 'application/json' }
+        });
+        if (stripeRes.ok) {
+          const stripeData = await stripeRes.json();
+          stripeConnected = !!stripeData.connected;
+        }
+      } catch (e) {
+        // ignore; leave as false
+      }
 
       // Get user ID from localStorage
       const userString = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
@@ -69,10 +78,10 @@ export default function DashboardCues() {
       // Check if user has saved payment method
       let hasPaymentMethod = false;
       try {
-        const pmRes = await authManager.authenticatedFetch(`${baseDomain}/api/payments/payment-method`, {
+        const pmRes = await authManager.authenticatedFetch(`${baseDomain}/api/payment-method`, {
           headers: { Accept: 'application/json' }
         });
-        hasPaymentMethod = pmRes.ok;
+        hasPaymentMethod = pmRes.ok || stripeConnected;
       } catch (e) {
         // Payment method not found is expected for new users
       }
@@ -85,7 +94,7 @@ export default function DashboardCues() {
         // Check social connections
         try {
           const socialRes = await authManager.authenticatedFetch(
-            `${baseDomain}/api/social/accounts?user_id=${encodeURIComponent(userId)}`, 
+            `${baseDomain}/api/social-accounts?user_id=${encodeURIComponent(userId)}`, 
             { headers: { Accept: 'application/json' } }
           );
           
@@ -103,7 +112,7 @@ export default function DashboardCues() {
         // Check mobile.de connection
         try {
           const mobileRes = await authManager.authenticatedFetch(
-            `${baseDomain}/api/mobilede/connect-mobile-de`, 
+            `${baseDomain}/api/connect-mobile-de`, 
             { headers: { Accept: 'application/json' } }
           );
           mobiledeConnected = mobileRes.ok;
@@ -114,12 +123,14 @@ export default function DashboardCues() {
         // Check if user has cars (mobile.de inventory)
         if (mobiledeConnected) {
           try {
-            const carsRes = await authManager.authenticatedFetch(`${baseDomain}/api/mobilede/cars`, {
+            const carsRes = await authManager.authenticatedFetch(`${baseDomain}/api/get-user-cars`, {
               headers: { Accept: 'application/json' }
             });
             if (carsRes.ok) {
               const carsData = await carsRes.json();
-              hasCars = Array.isArray(carsData) && carsData.length > 0;
+              // mobile.de returns nested structure: search-result.ads.ad
+              const rawCars = carsData?.['search-result']?.ads?.ad || [];
+              hasCars = Array.isArray(rawCars) && rawCars.length > 0;
             }
           } catch (e) {
             console.log('Cars check failed:', e);
@@ -146,36 +157,36 @@ export default function DashboardCues() {
     // High Priority Actions
     {
       id: 'connect-mobilede',
-      title: 'Import Your Cars',
-      description: 'Connect your mobile.de account to start managing your inventory',
+      title: connections.mobilede ? 'Cars Imported' : 'Import Your Cars',
+      description: connections.mobilede ? 'Your mobile.de account is connected.' : 'Connect your mobile.de account to start managing your inventory',
       icon: <FaCar className="text-green-600" />,
       actionUrl: '/dashboard/social-media',
-      actionText: 'Connect mobile.de',
+      actionText: connections.mobilede ? 'View Inventory' : 'Connect mobile.de',
       priority: 'high',
       category: 'connections',
       available: !connections.mobilede,
     },
     {
       id: 'connect-payment',
-      title: 'Add Payment Method',
-      description: 'Set up payments to run advertising campaigns',
+      title: connections.hasPaymentMethod ? 'Payments Connected' : 'Add Payment Method',
+      description: connections.hasPaymentMethod ? 'You can now run and manage campaigns.' : 'Set up payments to run advertising campaigns',
       icon: <FaCreditCard className="text-purple-600" />,
-      actionUrl: '/stripe/connect',
-      actionText: 'Setup Payments',
+      actionUrl: '/dashboard/payments/save-card',
+      actionText: connections.hasPaymentMethod ? 'Manage Payment' : 'Setup Payments',
       priority: 'high',
       category: 'payments',
       available: !connections.hasPaymentMethod,
     },
     {
       id: 'connect-social',
-      title: 'Connect Social Media',
-      description: 'Link Facebook & Instagram to create and manage ads',
+      title: (connections.facebook && connections.instagram) ? 'Social Connected' : 'Connect Social Media',
+      description: (connections.facebook && connections.instagram) ? 'Facebook & Instagram connected.' : 'Link Facebook & Instagram to create and manage ads',
       icon: <FaLink className="text-blue-600" />,
       actionUrl: '/dashboard/social-media',
-      actionText: 'Connect Accounts',
+      actionText: (connections.facebook && connections.instagram) ? 'Manage Accounts' : 'Connect Accounts',
       priority: 'high',
       category: 'connections',
-      available: !connections.facebook || !connections.instagram,
+      available: !(connections.facebook && connections.instagram),
     },
 
     // Medium Priority Actions
@@ -287,12 +298,32 @@ export default function DashboardCues() {
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-800">
           What You Can Do
         </h3>
         <FaBullhorn className="text-blue-500 text-xl" />
       </div>
+
+      {/* Quick status overview */}
+      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+        <div className={`flex items-center justify-between px-3 py-2 rounded-lg border ${connections.mobilede ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+          <span className="text-sm text-gray-700">mobile.de</span>
+          <span className={`text-xs font-medium px-2 py-0.5 rounded ${connections.mobilede ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>{connections.mobilede ? 'Connected' : 'Not connected'}</span>
+        </div>
+        <div className={`flex items-center justify-between px-3 py-2 rounded-lg border ${(connections.facebook && connections.instagram) ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+          <span className="text-sm text-gray-700">Facebook & Instagram</span>
+          <span className={`text-xs font-medium px-2 py-0.5 rounded ${(connections.facebook && connections.instagram) ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>{(connections.facebook && connections.instagram) ? 'Connected' : 'Not connected'}</span>
+        </div>
+        <div className={`flex items-center justify-between px-3 py-2 rounded-lg border ${connections.hasPaymentMethod ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+          <span className="text-sm text-gray-700">Payments</span>
+          <span className={`text-xs font-medium px-2 py-0.5 rounded ${connections.hasPaymentMethod ? 'bg-green-100 text-green-800' : 'bg-gray-2 00 text-gray-700'}`}>{connections.hasPaymentMethod ? 'Connected' : 'Not connected'}</span>
+        </div>
+        <div className={`flex items-center justify-between px-3 py-2 rounded-lg border ${connections.hasCars ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+          <span className="text-sm text-gray-700">Inventory</span>
+          <span className={`text-xs font-medium px-2 py-0.5 rounded ${connections.hasCars ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>{connections.hasCars ? 'Imported' : 'No cars'}</span>
+        </div>
+      </div> */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {availableCues.map((cue) => (

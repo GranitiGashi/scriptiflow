@@ -42,6 +42,8 @@ export default function BoostPage() {
   const [adBudget, setAdBudget] = useState<number>(100); // Default €100 ad spend
   const [campaignDuration, setCampaignDuration] = useState<number>(7); // Default 7 days
   const [socialAccounts, setSocialAccounts] = useState<any>(null);
+  const [reachEstimate, setReachEstimate] = useState<any>(null);
+  const [loadingReach, setLoadingReach] = useState<boolean>(false);
 
   useEffect(() => {
     const raw = typeof window !== 'undefined' ? sessionStorage.getItem('selected_car_for_boost') : null;
@@ -155,6 +157,42 @@ export default function BoostPage() {
     };
   }, [car]);
 
+  async function fetchReachEstimate() {
+    if (!selectedAdAccount || !plan) return;
+    
+    setLoadingReach(true);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
+      if (!token) throw new Error('Not authenticated');
+      
+      const res = await fetch(`${baseDomain}/api/ads/reach-estimate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+          'x-refresh-token': refreshToken || ''
+        },
+        body: JSON.stringify({
+          ad_account_id: selectedAdAccount,
+          targeting: plan.targeting,
+          daily_budget_cents: Math.round((adBudget * 100) / campaignDuration),
+          campaign_duration_days: campaignDuration
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setReachEstimate(data);
+      }
+    } catch (e: any) {
+      console.error('Failed to get reach estimate:', e);
+    } finally {
+      setLoadingReach(false);
+    }
+  }
+
   async function fetchRecommendation() {
     if (!mainData) return;
     setLoadingAI(true);
@@ -238,6 +276,13 @@ export default function BoostPage() {
     }
   }
 
+  // Fetch reach estimate when plan or budget changes
+  useEffect(() => {
+    if (plan && selectedAdAccount && adBudget > 0) {
+      fetchReachEstimate();
+    }
+  }, [plan, selectedAdAccount, adBudget, campaignDuration]);
+
   async function handleLaunch() {
     if (!selectedAdAccount) {
       setSubmitError('Please select an ad account');
@@ -263,13 +308,19 @@ export default function BoostPage() {
         },
         body: JSON.stringify({ 
           ad_account_id: selectedAdAccount, 
-          plan: { ...plan, daily_budget_cents: Math.round((adBudget * 100) / campaignDuration) }, 
+          plan: { 
+            ...plan, 
+            daily_budget_cents: Math.round((adBudget * 100) / campaignDuration),
+            special_ad_categories: plan?.special_ad_categories || []
+          }, 
           creative, 
           total_budget_cents: Math.round(adBudget * 100),
           service_fee_cents: Math.round(serviceFee * 100),
           campaign_duration_days: campaignDuration
         })
+        
       });
+      console.log('res', res)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error((err as any).error || 'Failed to create campaign');
@@ -443,6 +494,41 @@ export default function BoostPage() {
                 </div>
               </div>
             </div>
+
+            {reachEstimate && (
+              <div className="bg-blue-50 rounded-lg p-4 mt-4">
+                <h4 className="font-semibold text-blue-900 mb-3">📊 Facebook Reach Estimate</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <div className="text-blue-700">Estimated Reach</div>
+                    <div className="font-bold text-blue-900">
+                      {reachEstimate.reach_estimate.min_reach.toLocaleString()} - {reachEstimate.reach_estimate.max_reach.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-blue-700">Impressions</div>
+                    <div className="font-bold text-blue-900">
+                      {reachEstimate.performance_estimates.estimated_impressions.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-blue-700">Estimated Clicks</div>
+                    <div className="font-bold text-blue-900">
+                      {reachEstimate.performance_estimates.estimated_clicks.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-blue-700">Cost Per Click</div>
+                    <div className="font-bold text-blue-900">
+                      €{(reachEstimate.cost_estimates.cost_per_click_cents / 100).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-blue-600">
+                  Estimates based on Facebook's reach data for your targeting and budget
+                </div>
+              </div>
+            )}
 
             {submitError && <div className="text-red-600 text-sm mt-3">{submitError}</div>}
 
