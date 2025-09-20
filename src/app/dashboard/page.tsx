@@ -13,6 +13,9 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const storedRole = localStorage.getItem('role');
     setRole(storedRole);
+    if (storedRole === 'admin') {
+      window.location.href = '/dashboard/admin';
+    }
   }, []);
 
   return (

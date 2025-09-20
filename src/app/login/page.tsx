@@ -74,7 +74,8 @@ const LoginForm: React.FC = () => {
       setFormData({ email: "", password: "" });
 
       setTimeout(() => {
-        router.push("/dashboard");
+        const dest = response.data.user.role === 'admin' ? '/dashboard/admin' : '/dashboard';
+        router.push(dest);
       }, 1000);
     } catch (err: any) {
       const errorMessage =

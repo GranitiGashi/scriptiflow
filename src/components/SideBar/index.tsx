@@ -45,8 +45,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     ],
   };
 
+  const filteredStatic = role === 'admin' ? staticNavItems.filter(item => item.name !== 'Dashboard') : staticNavItems;
+
   const navItems: NavItem[] = [
-    ...staticNavItems,
+    ...filteredStatic,
     ...(role ? (navMap[role] ?? []) : []),
   ];
 

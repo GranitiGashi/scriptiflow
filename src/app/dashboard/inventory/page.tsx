@@ -20,6 +20,10 @@ interface Car {
   fuel: string;
   power: string;
   gearbox: string;
+  dealerCity?: string | null;
+  dealerZip?: string | null;
+  dealerLat?: number | null;
+  dealerLon?: number | null;
 }
 
 export default function InventoryPage() {
@@ -96,6 +100,18 @@ export default function InventoryPage() {
           power: c.vehicle.specifics.power?.['@value'] || '',
           gearbox: c.vehicle.specifics.gearbox?.['@key'] || '',
           url: c['detail-page']?.['@url'] || '#',
+          dealerCity: c?.seller?.address?.city?.['@value'] || c?.seller?.location?.city?.['@value'] || null,
+          dealerZip: c?.seller?.address?.['postal-code']?.['@value'] || c?.seller?.location?.zipcode?.['@value'] || null,
+          dealerLat: (() => {
+            const v = c?.seller?.location?.coordinates?.latitude?.['@value'] || c?.seller?.location?.latitude?.['@value'] || c?.seller?.location?.latitude || null;
+            const n = typeof v === 'string' ? parseFloat(v) : (typeof v === 'number' ? v : null);
+            return Number.isFinite(n as number) ? (n as number) : null;
+          })(),
+          dealerLon: (() => {
+            const v = c?.seller?.location?.coordinates?.longitude?.['@value'] || c?.seller?.location?.longitude?.['@value'] || c?.seller?.location?.longitude || null;
+            const n = typeof v === 'string' ? parseFloat(v) : (typeof v === 'number' ? v : null);
+            return Number.isFinite(n as number) ? (n as number) : null;
+          })(),
         }));
 
         setCars(mappedCars);

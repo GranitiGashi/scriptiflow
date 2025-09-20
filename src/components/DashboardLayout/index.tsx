@@ -1,6 +1,8 @@
 'use client';
 
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import authManager from '@/lib/auth';
 import Sidebar from '../SideBar';
 import Header from '../DashboardHeader';
 
@@ -9,10 +11,39 @@ interface LayoutProps {
 }
 
 export default function DashboardLayout({ children }: LayoutProps) {
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true); // open by default
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const token = await authManager.getValidAccessToken();
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+        if (isMounted) setAuthorized(true);
+      } catch {
+        router.push('/login');
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
   const closeSidebar = () => setSidebarOpen(false);
+
+  if (!authorized) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">

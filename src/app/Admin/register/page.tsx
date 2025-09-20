@@ -9,6 +9,7 @@ interface SimpleFormData {
   full_name: string;
   company_name: string;
   role: string;
+  permissions: string;
 }
 
 const RegisterForm: React.FC = () => {
@@ -18,6 +19,7 @@ const RegisterForm: React.FC = () => {
     full_name: "",
     company_name: "",
     role: "client",
+    permissions: "basic",
   });
 
   const [error, setError] = useState<string>("");
@@ -26,7 +28,8 @@ const RegisterForm: React.FC = () => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [storedRole, setStoredRole] = useState<string | null>(null);
   const [tokenChecked, setTokenChecked] = useState(false);
-const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080'
+  const [inviteMode, setInviteMode] = useState<boolean>(true);
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     const role = localStorage.getItem("role");
@@ -35,7 +38,7 @@ const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
     setTokenChecked(true);
   }, []);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -55,34 +58,57 @@ const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
     }
 
     try {
-      const response = await fetch(
-        `${baseDomain}/api/signup`,
-        {
-          method: "POST",
+      if (inviteMode) {
+        // Use admin invite flow: user receives email to set their own password (no initial password stored)
+        const response = await fetch(`${baseDomain}/api/admin/invite`, {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${accessToken}`,
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            email: formData.email,
+            full_name: formData.full_name,
+            company_name: formData.company_name,
+            role: formData.role,
+            permissions: formData.role === 'admin' ? { tier: '*' } : { tier: formData.permissions },
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Invite failed.');
         }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Registration failed.");
+        setSuccess('Invitation sent. Ask the user to check their email to set a password.');
+      } else {
+        // Keep legacy direct-signup path
+        const response = await fetch(`${baseDomain}/api/signup`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            ...formData,
+            permissions: formData.role === 'admin' ? { tier: '*' } : { tier: formData.permissions },
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Registration failed.');
+        }
+        setSuccess('Registration successful!');
       }
 
-      setSuccess("Registration successful!");
       setFormData({
         email: "",
         password: "",
         full_name: "",
         company_name: "",
         role: "client",
+        permissions: "basic",
       });
     } catch (err: any) {
-      setError(err.message || "Something went wrong.");
+      setError(err.message || 'Something went wrong.');
     }
   };
 
@@ -106,6 +132,16 @@ const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="flex items-center justify-between">
+              <label className="text-purple-300 text-sm">Send invite (user sets password)</label>
+              <input
+                type="checkbox"
+                checked={inviteMode}
+                onChange={(e) => setInviteMode(e.target.checked)}
+                className="h-4 w-4 accent-purple-600"
+                title="If enabled, an email invite is sent and the user sets their password."
+              />
+            </div>
             <input
               name="email"
               type="email"
@@ -115,15 +151,17 @@ const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
               placeholder="Email"
               className="w-full p-3 rounded-lg bg-[#1e253f] border border-purple-600 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-            <input
-              name="password"
-              type="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Password"
-              className="w-full p-3 rounded-lg bg-[#1e253f] border border-purple-600 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
+            {!inviteMode && (
+              <input
+                name="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Password"
+                className="w-full p-3 rounded-lg bg-[#1e253f] border border-purple-600 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            )}
             <input
               name="full_name"
               type="text"
@@ -142,7 +180,23 @@ const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
               placeholder="Company Name"
               className="w-full p-3 rounded-lg bg-[#1e253f] border border-purple-600 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-            <input type="hidden" name="role" value={formData.role} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm text-purple-300 mb-1">Role</label>
+                <select name="role" value={formData.role} onChange={handleChange} className="w-full p-3 rounded-lg bg-[#1e253f] border border-purple-600 text-white focus:outline-none">
+                  <option value="client">Client</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-purple-300 mb-1">Permissions</label>
+                <select name="permissions" value={formData.permissions} onChange={handleChange} className="w-full p-3 rounded-lg bg-[#1e253f] border border-purple-600 text-white focus:outline-none">
+                  <option value="basic">Basic</option>
+                  <option value="pro">Pro</option>
+                  <option value="premium">Premium</option>
+                </select>
+              </div>
+            </div>
             <button
               type="submit"
               className="w-full py-3 bg-gradient-to-r from-purple-500 to-purple-700 rounded-lg font-bold text-white hover:from-purple-700 hover:to-purple-900 transition duration-300"

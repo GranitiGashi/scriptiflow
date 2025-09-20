@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../../../components/DashboardLayout';
 import AdminUserApps from '../../../components/AdminUserApps';
+import AdminTickets from '../../../components/AdminTickets';
 import authManager from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
@@ -88,56 +89,11 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Admin Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold">Total Users</h3>
-            <p className="text-3xl font-bold text-purple-600">--</p>
-            <p className="text-gray-500">
-              <i className="fas fa-users mr-1"></i>Active accounts
-            </p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold">Custom Apps</h3>
-            <p className="text-3xl font-bold text-blue-600">--</p>
-            <p className="text-gray-500">
-              <i className="fas fa-cubes mr-1"></i>Admin-created apps
-            </p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold">Active Connections</h3>
-            <p className="text-3xl font-bold text-green-600">--</p>
-            <p className="text-gray-500">
-              <i className="fas fa-link mr-1"></i>User integrations
-            </p>
-          </div>
-        </div>
-
         {/* Admin User Apps Management */}
         <AdminUserApps />
 
-        {/* Quick Admin Actions */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-4">Quick Admin Actions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <i className="fas fa-users text-2xl text-purple-600 mb-2"></i>
-              <span className="text-sm font-medium">Manage Users</span>
-            </button>
-            <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <i className="fas fa-cubes text-2xl text-blue-600 mb-2"></i>
-              <span className="text-sm font-medium">App Templates</span>
-            </button>
-            <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <i className="fas fa-chart-line text-2xl text-green-600 mb-2"></i>
-              <span className="text-sm font-medium">Usage Analytics</span>
-            </button>
-            <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <i className="fas fa-cog text-2xl text-gray-600 mb-2"></i>
-              <span className="text-sm font-medium">System Settings</span>
-            </button>
-          </div>
-        </div>
+        {/* Support Tickets Management */}
+        <AdminTickets />
       </div>
     </DashboardLayout>
   );

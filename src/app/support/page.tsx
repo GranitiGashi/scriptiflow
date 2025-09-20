@@ -3,6 +3,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { useEffect, useState } from "react";
 import authManager from "@/lib/auth";
+import { supabaseClient, initSupabaseSessionFromLocalStorage } from "@/lib/supabaseClient";
 
 interface Ticket {
   id: string;
@@ -31,9 +32,54 @@ export default function SupportPage() {
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState("");
 
+  function playNotificationSound() {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.02);
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+      osc.stop(ctx.currentTime + 0.5);
+    } catch {}
+  }
+
   useEffect(() => {
     fetchTickets();
-  }, []);
+    // init Supabase session for realtime
+    initSupabaseSessionFromLocalStorage();
+    const subTickets = supabaseClient
+      .channel("client-tickets")
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, () => {
+        fetchTickets();
+      })
+      .subscribe();
+
+    const subMessages = supabaseClient
+      .channel("client-messages")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages" }, (payload: { new?: { ticket_id?: string, user_id?: string } }) => {
+        if (activeTicket && payload.new && payload.new.ticket_id === activeTicket.id) {
+          openChat(activeTicket);
+          // play sound only if message is not from me
+          const me = (() => { try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; } })();
+          if (!me || (payload.new.user_id && payload.new.user_id !== me?.id)) {
+            playNotificationSound();
+          }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabaseClient.removeChannel(subTickets);
+      supabaseClient.removeChannel(subMessages);
+    };
+  }, [activeTicket?.id]);
 
   async function fetchTickets() {
     setLoading(true);

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useRouter } from 'next/navigation';
 import authManager from '@/lib/auth';
-import AgencyPaymentForm from '@/components/AgencyPaymentForm';
+ 
 
 type Car = {
   id: string;
@@ -20,6 +20,8 @@ type Car = {
   fuel: string;
   power: string;
   gearbox: string;
+  dealerLat?: number;
+  dealerLon?: number;
 };
 
 type AdAccount = { id: string; name: string; currency?: string; account_status?: number };
@@ -41,9 +43,28 @@ export default function BoostPage() {
   const [serviceFee, setServiceFee] = useState<number>(20); // Default €20 service fee
   const [adBudget, setAdBudget] = useState<number>(100); // Default €100 ad spend
   const [campaignDuration, setCampaignDuration] = useState<number>(7); // Default 7 days
+  const [radiusKm, setRadiusKm] = useState<number>(25); // Default 25km radius
   const [socialAccounts, setSocialAccounts] = useState<any>(null);
   const [reachEstimate, setReachEstimate] = useState<any>(null);
   const [loadingReach, setLoadingReach] = useState<boolean>(false);
+  
+  const [showReach, setShowReach] = useState<boolean>(false);
+
+  const countryOptions = [
+    { code: 'DE', name: 'Germany' },
+    { code: 'AT', name: 'Austria' },
+    { code: 'CH', name: 'Switzerland' },
+    { code: 'FR', name: 'France' },
+    { code: 'IT', name: 'Italy' },
+    { code: 'ES', name: 'Spain' },
+    { code: 'NL', name: 'Netherlands' },
+    { code: 'BE', name: 'Belgium' },
+    { code: 'PL', name: 'Poland' },
+    { code: 'CZ', name: 'Czechia' },
+    { code: 'DK', name: 'Denmark' },
+    { code: 'SE', name: 'Sweden' },
+    { code: 'NO', name: 'Norway' },
+  ];
 
   useEffect(() => {
     const raw = typeof window !== 'undefined' ? sessionStorage.getItem('selected_car_for_boost') : null;
@@ -76,12 +97,12 @@ export default function BoostPage() {
             Accept: 'application/json',
           }
         });
-        
+
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           const message = (errData as any).error || 'Failed to load ad accounts';
           setAdAccountsError(message);
-          
+
           // If FB token missing, try to fetch login URL to help user connect
           if (String(message).toLowerCase().includes('facebook user token not found')) {
             try {
@@ -95,11 +116,11 @@ export default function BoostPage() {
                 const loginData = await loginRes.json();
                 setFbLoginUrl(loginData.auth_url);
               }
-            } catch (_) {}
+            } catch (_) { }
           }
           return;
         }
-        
+
         const data = await res.json();
         const list: AdAccount[] = data?.data || data || [];
         setAdAccounts(list);
@@ -107,7 +128,7 @@ export default function BoostPage() {
       } catch (e: any) {
         console.error('Error loading ad accounts:', e);
         setAdAccountsError(e.message || 'Failed to load ad accounts');
-        
+
         // If it's an authentication error, the auth manager will handle redirecting to login
         if (e.message.includes('No valid access token')) {
           setAdAccountsError('Session expired. Please log in again.');
@@ -117,7 +138,7 @@ export default function BoostPage() {
 
     async function loadSocialAccounts() {
       try {
-        const res = await authManager.authenticatedFetch(`${baseDomain}/api/social/accounts`, {
+        const res = await authManager.authenticatedFetch(`${baseDomain}/api/social-accounts`, {
           headers: {
             Accept: 'application/json'
           }
@@ -159,13 +180,13 @@ export default function BoostPage() {
 
   async function fetchReachEstimate() {
     if (!selectedAdAccount || !plan) return;
-    
+
     setLoadingReach(true);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
       const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
       if (!token) throw new Error('Not authenticated');
-      
+
       const res = await fetch(`${baseDomain}/api/ads/reach-estimate`, {
         method: 'POST',
         headers: {
@@ -181,7 +202,7 @@ export default function BoostPage() {
           campaign_duration_days: campaignDuration
         })
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         setReachEstimate(data);
@@ -234,7 +255,23 @@ export default function BoostPage() {
       const ta = proposal.targeting || proposal.target_audience;
       let targeting: any = undefined;
       if (ta) {
-        targeting = { geo_locations: { countries: [proposal.country || 'DE'] } };
+        // Prefer radius targeting if dealer coordinates are available
+        if (car?.dealerLat && car?.dealerLon) {
+          targeting = {
+            geo_locations: {
+              custom_locations: [
+                {
+                  latitude: car.dealerLat,
+                  longitude: car.dealerLon,
+                  radius: radiusKm || 25,
+                  distance_unit: 'kilometer',
+                },
+              ],
+            },
+          };
+        } else {
+          targeting = { geo_locations: { countries: [proposal.country || 'DE'] } };
+        }
         const age = typeof ta.age === 'string' ? ta.age : undefined;
         if (age && age.includes('-')) {
           const [min, max] = age.split('-').map((n: string) => Number(n.trim()));
@@ -252,7 +289,9 @@ export default function BoostPage() {
         duration_days: Number(durationDays) || 7,
         daily_budget_cents: Math.round(Number(dailyBudgetEur || 10) * 100),
         targeting,
-        country: proposal.country || 'DE'
+        country: proposal.country || 'DE',
+        "bid_strategy": "LOWEST_COST",
+        "bid_amount": 200 
       });
 
       const creativeSrc = proposal.creative || proposal.ad_creative || {};
@@ -275,6 +314,41 @@ export default function BoostPage() {
       setLoadingAI(false);
     }
   }
+
+  // Update targeting radius live when user adjusts radiusKm
+  useEffect(() => {
+    if (!plan) return;
+    if (car?.dealerLat && car?.dealerLon) {
+      setPlan((p: any) => ({
+        ...(p || {}),
+        targeting: {
+          geo_locations: {
+            custom_locations: [
+              {
+                latitude: car.dealerLat,
+                longitude: car.dealerLon,
+                radius: radiusKm || 25,
+                distance_unit: 'kilometer',
+              }
+            ]
+          }
+        }
+      }));
+    }
+  }, [radiusKm, car?.dealerLat, car?.dealerLon]);
+
+  // Auto-sync total budget from AI daily budget × duration
+  useEffect(() => {
+    if (plan?.daily_budget_cents && plan?.duration_days) {
+      const total = Math.max(0, Math.round((plan.daily_budget_cents / 100) * plan.duration_days));
+      if (Number.isFinite(total) && total !== adBudget) {
+        setAdBudget(total);
+      }
+      if (plan.duration_days !== campaignDuration) {
+        setCampaignDuration(plan.duration_days);
+      }
+    }
+  }, [plan?.daily_budget_cents, plan?.duration_days]);
 
   // Fetch reach estimate when plan or budget changes
   useEffect(() => {
@@ -306,19 +380,19 @@ export default function BoostPage() {
           Authorization: `Bearer ${token}`,
           'x-refresh-token': refreshToken || ''
         },
-        body: JSON.stringify({ 
-          ad_account_id: selectedAdAccount, 
-          plan: { 
-            ...plan, 
+        body: JSON.stringify({
+          ad_account_id: selectedAdAccount,
+          plan: {
+            ...plan,
             daily_budget_cents: Math.round((adBudget * 100) / campaignDuration),
             special_ad_categories: plan?.special_ad_categories || []
-          }, 
-          creative, 
+          },
+          creative,
           total_budget_cents: Math.round(adBudget * 100),
           service_fee_cents: Math.round(serviceFee * 100),
           campaign_duration_days: campaignDuration
         })
-        
+
       });
       console.log('res', res)
       if (!res.ok) {
@@ -383,21 +457,48 @@ export default function BoostPage() {
                 <label className="block text-sm text-gray-600">Duration (days)</label>
                 <input type="number" value={plan?.duration_days || ''} onChange={(e) => setPlan((p: any) => ({ ...(p || {}), duration_days: Number(e.target.value) }))} className="w-full border rounded p-2" placeholder="7" />
               </div>
-              <div>
-                <label className="block text-sm text-gray-600">Daily Budget (EUR)</label>
-                <input type="number" value={plan?.daily_budget_cents ? (plan.daily_budget_cents / 100) : ''} onChange={(e) => setPlan((p: any) => ({ ...(p || {}), daily_budget_cents: Math.round(Number(e.target.value || 0) * 100) }))} className="w-full border rounded p-2" placeholder="10" />
-              </div>
+              
               <div>
                 <label className="block text-sm text-gray-600">Country</label>
-                <input value={plan?.country || ''} onChange={(e) => setPlan((p: any) => ({ ...(p || {}), country: e.target.value }))} className="w-full border rounded p-2" placeholder="DE" />
+                <select
+                  className="w-full border rounded p-2"
+                  value={plan?.country || ''}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    setPlan((p: any) => {
+                      const next = { ...(p || {}), country: code };
+                      // If radius targeting is not active, update country targeting
+                      const hasRadius = !!p?.targeting?.geo_locations?.custom_locations?.length;
+                      if (!hasRadius) {
+                        next.targeting = { geo_locations: { countries: [code] } };
+                      }
+                      return next;
+                    });
+                  }}
+                >
+                  <option value="">Select a country</option>
+                  {countryOptions.map((c) => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">Radius (km)</label>
+                <input type="number" value={radiusKm} onChange={(e) => setRadiusKm(Math.max(1, Number(e.target.value || 0)))} className="w-full border rounded p-2" placeholder="25" />
+                {(!car?.dealerLat || !car?.dealerLon) && (
+                  <div className="text-xs text-amber-600 mt-1">Dealer location not available. Country targeting will be used.</div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">Total Ad Budget (€)</label>
+                <input type="number" value={adBudget} onChange={(e) => setAdBudget(Math.max(0, Number(e.target.value || 0)))} className="w-full border rounded p-2" placeholder="100" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">Service Fee (€)</label>
+                <input type="number" value={serviceFee} onChange={(e) => setServiceFee(Math.max(0, Number(e.target.value || 0)))} className="w-full border rounded p-2" placeholder="20" />
               </div>
             </div>
-            <div className="mt-4">
-              <label className="block text-sm text-gray-600">Targeting (JSON)</label>
-              <textarea value={plan?.targeting ? JSON.stringify(plan.targeting, null, 2) : ''} onChange={(e) => {
-                try { setPlan((p: any) => ({ ...(p || {}), targeting: e.target.value ? JSON.parse(e.target.value) : undefined })); } catch (_) {}
-              }} className="w-full border rounded p-2 font-mono text-sm min-h-[120px]" placeholder='{"geo_locations": {"countries": ["DE"]}}' />
-            </div>
+            
           </div>
 
           <div className="bg-white rounded-xl shadow p-4 sm:p-6">
@@ -410,14 +511,6 @@ export default function BoostPage() {
               <div>
                 <label className="block text-sm text-gray-600">Headline</label>
                 <input value={creative?.headline || ''} onChange={(e) => setCreative((c: any) => ({ ...(c || {}), headline: e.target.value }))} className="w-full border rounded p-2" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600">Description</label>
-                <input value={creative?.description || ''} onChange={(e) => setCreative((c: any) => ({ ...(c || {}), description: e.target.value }))} className="w-full border rounded p-2" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600">CTA</label>
-                <input value={creative?.cta || ''} onChange={(e) => setCreative((c: any) => ({ ...(c || {}), cta: e.target.value }))} className="w-full border rounded p-2" placeholder="LEARN_MORE" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600">Landing URL</label>
@@ -454,34 +547,8 @@ export default function BoostPage() {
             </div>
           </div>
 
-          <AgencyPaymentForm
-            adBudget={adBudget}
-            setAdBudget={setAdBudget}
-            serviceFee={serviceFee}
-            setServiceFee={setServiceFee}
-            campaignDuration={campaignDuration}
-            setCampaignDuration={setCampaignDuration}
-          />
-
           <div className="bg-white rounded-xl shadow p-4 sm:p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-600">Ad Account</label>
-                <select className="w-full border rounded p-2" value={selectedAdAccount} onChange={(e) => setSelectedAdAccount(e.target.value)}>
-                  <option value="">Select an ad account</option>
-                  {adAccounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>{acc.name} ({acc.id})</option>
-                  ))}
-                </select>
-                {adAccountsError && (
-                  <div className="text-sm text-red-600 mt-2">{adAccountsError}</div>
-                )}
-                {!adAccounts.length && fbLoginUrl && (
-                  <button onClick={() => (window.location.href = fbLoginUrl)} className="mt-3 bg-blue-600 text-white px-3 py-2 rounded">
-                    Connect Facebook to Continue
-                  </button>
-                )}
-              </div>
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm text-gray-600">Campaign Summary</label>
                 <div className="bg-blue-50 rounded-lg p-3 text-sm">
@@ -495,40 +562,52 @@ export default function BoostPage() {
               </div>
             </div>
 
-            {reachEstimate && (
-              <div className="bg-blue-50 rounded-lg p-4 mt-4">
-                <h4 className="font-semibold text-blue-900 mb-3">📊 Facebook Reach Estimate</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <div className="text-blue-700">Estimated Reach</div>
-                    <div className="font-bold text-blue-900">
-                      {reachEstimate.reach_estimate.min_reach.toLocaleString()} - {reachEstimate.reach_estimate.max_reach.toLocaleString()}
-                    </div>
+            <div className="mt-4">
+              <button type="button" onClick={() => setShowReach((s) => !s)} className="text-sm text-blue-600">
+                {showReach ? 'Hide reach estimate' : 'Show reach estimate'}
+              </button>
+            </div>
+
+            {showReach && reachEstimate && (
+              <div className="bg-white rounded-xl border p-4 mt-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-gray-800">Estimated Results</h4>
+                  <span className="text-xs text-gray-500">Based on Facebook delivery estimates</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
+                  <div className="p-3 rounded-lg bg-gray-50 border">
+                    <div className="text-xs text-gray-500">Daily Reach</div>
+                    <div className="text-xl font-bold text-gray-900">{reachEstimate?.reach_estimate?.daily_reach?.toLocaleString?.() ?? 'N/A'}</div>
                   </div>
-                  <div>
-                    <div className="text-blue-700">Impressions</div>
-                    <div className="font-bold text-blue-900">
-                      {reachEstimate.performance_estimates.estimated_impressions.toLocaleString()}
-                    </div>
+                  <div className="p-3 rounded-lg bg-gray-50 border">
+                    <div className="text-xs text-gray-500">Impressions (est.)</div>
+                    <div className="text-xl font-bold text-gray-900">{reachEstimate?.performance_estimates?.estimated_impressions?.toLocaleString?.() ?? 'N/A'}</div>
                   </div>
-                  <div>
-                    <div className="text-blue-700">Estimated Clicks</div>
-                    <div className="font-bold text-blue-900">
-                      {reachEstimate.performance_estimates.estimated_clicks.toLocaleString()}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-blue-700">Cost Per Click</div>
-                    <div className="font-bold text-blue-900">
-                      €{(reachEstimate.cost_estimates.cost_per_click_cents / 100).toFixed(2)}
-                    </div>
+                  <div className="p-3 rounded-lg bg-gray-50 border">
+                    <div className="text-xs text-gray-500">Clicks (est.)</div>
+                    <div className="text-xl font-bold text-gray-900">{reachEstimate?.performance_estimates?.estimated_clicks?.toLocaleString?.() ?? 'N/A'}</div>
                   </div>
                 </div>
-                <div className="mt-2 text-xs text-blue-600">
-                  Estimates based on Facebook's reach data for your targeting and budget
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
+                  <div className="p-3 rounded-lg bg-gray-50 border">
+                    <div className="text-xs text-gray-500">Avg Reach</div>
+                    <div className="text-lg font-semibold text-gray-900">{reachEstimate?.reach_estimate?.avg_reach?.toLocaleString?.() ?? 'N/A'}</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-gray-50 border">
+                    <div className="text-xs text-gray-500">CPC (est.)</div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      {reachEstimate?.cost_estimates?.cost_per_click_cents !== undefined ? `€${(reachEstimate.cost_estimates.cost_per_click_cents / 100).toFixed(2)}` : 'N/A'}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-gray-50 border">
+                    <div className="text-xs text-gray-500">Total Budget</div>
+                    <div className="text-lg font-semibold text-gray-900">€{(reachEstimate?.cost_estimates?.total_budget_eur ?? 0).toFixed?.(2)}</div>
+                  </div>
                 </div>
               </div>
             )}
+
+
 
             {submitError && <div className="text-red-600 text-sm mt-3">{submitError}</div>}
 
