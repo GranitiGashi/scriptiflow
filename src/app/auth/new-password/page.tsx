@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import DashboardLayout from "@/components/DashboardLayout";
 
 export default function NewPasswordPage() {
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
@@ -46,10 +45,11 @@ export default function NewPasswordPage() {
         setLoading(false);
         return;
       }
+      const mode = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('mode') || undefined) : undefined;
       const res = await fetch(`${baseDomain}/api/set-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${access}`, 'x-refresh-token': refresh },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, mode }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -65,8 +65,8 @@ export default function NewPasswordPage() {
   }
 
   return (
-    <DashboardLayout>
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-sm p-6 border border-gray-100">
         <h1 className="text-xl font-semibold mb-4">Set a new password</h1>
         <form onSubmit={submit} className="space-y-3">
           <div>
@@ -82,7 +82,7 @@ export default function NewPasswordPage() {
         {status && <div className="mt-3 text-green-700 text-sm">{status}</div>}
         {error && <div className="mt-3 text-red-600 text-sm">{error}</div>}
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
 
