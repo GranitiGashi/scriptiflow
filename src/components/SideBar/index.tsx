@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import { getUserTier, hasTierOrAbove } from "@/lib/permissions";
 
 interface NavItem {
   name: string;
@@ -39,11 +40,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       { name: "Add Apps", path: "/dashboard/admin/apps", icon: "fas fa-cubes" },
       { name: "Register", path: "/Admin/register/", icon: "fas fa-users" },
     ],
-    client: [
-      { name: "Integrations", path: "/dashboard/social-media", icon: "fab fa-facebook" },
-      { name: "Autopost", path: "/dashboard/social-media/autopost", icon: "fas fa-bolt" },
-      { name: "My Inventory", path: "/dashboard/inventory", icon: "fab fa-facebook"},
-    ],
+    client: (
+      () => {
+        const items: NavItem[] = [];
+        // basic and above: integrations + autopost + inventory
+        items.push({ name: "Integrations", path: "/dashboard/social-media", icon: "fab fa-facebook" });
+        items.push({ name: "Autopost", path: "/dashboard/social-media/autopost", icon: "fas fa-bolt" });
+        items.push({ name: "My Inventory", path: "/dashboard/inventory", icon: "fab fa-facebook"});
+        // premium only pages reserved (none yet)
+        return items;
+      }
+    )(),
   };
 
   const filteredStatic = role === 'admin' ? staticNavItems.filter(item => item.name !== 'Dashboard') : staticNavItems;

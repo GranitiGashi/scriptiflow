@@ -1,6 +1,7 @@
 'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
+import { hasTierOrAbove, getUserTier } from '@/lib/permissions';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaCar } from 'react-icons/fa';
@@ -27,6 +28,8 @@ interface Car {
 }
 
 export default function InventoryPage() {
+  const allowed = hasTierOrAbove('pro');
+  const tier = getUserTier();
   const [cars, setCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -172,7 +175,7 @@ export default function InventoryPage() {
     }
 
     fetchCars();
-  }, [mobileDeConnected, baseDomain]);
+  }, [mobileDeConnected, baseDomain, allowed]);
 
   const handleBoostPost = (car: Car) => {
     try {
@@ -191,6 +194,12 @@ export default function InventoryPage() {
         <h1 className="text-3xl font-bold mb-8 text-center text-gray-800">
           Car Inventory
         </h1>
+
+        {!allowed && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-center max-w-2xl mx-auto">
+            Boost ist im {tier ?? 'Basic'}-Paket gesperrt. Sie können Ihre Fahrzeuge ansehen.
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg text-center max-w-2xl mx-auto">
@@ -262,10 +271,11 @@ export default function InventoryPage() {
                     View Details
                   </a>
                   <button
-                    onClick={() => handleBoostPost(car)}
-                    className="bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2 px-4 rounded"
+                    onClick={() => allowed ? handleBoostPost(car) : undefined}
+                    className={`text-white text-sm font-medium py-2 px-4 rounded ${allowed ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed flex items-center gap-2'}`}
+                    title={allowed ? 'Boost diesen Beitrag' : 'Upgrade erforderlich: Boost nur ab Pro'}
                   >
-                    Boost Post
+                    {allowed ? 'Boost Post' : 'Boost (gesperrt)'}
                   </button>
                 </div>
               </div>

@@ -1,10 +1,11 @@
 'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { FaFacebook, FaInstagram, FaStripe, FaCar } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaStripe, FaCar, FaLock } from 'react-icons/fa';
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import authManager from '@/lib/auth';
+import { getUserTier } from '@/lib/permissions';
 
 export default function ConnectPage() {
   const [accounts, setAccounts] = useState<{
@@ -387,10 +388,14 @@ export default function ConnectPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {integrations.map((integration) => (
+            {integrations.map((integration) => {
+              const tier = getUserTier();
+              const isStripe = integration.name === 'Stripe';
+              const locked = isStripe && tier === 'basic';
+              return (
               <div
                 key={integration.name}
-                className={`rounded-xl shadow-lg p-6 ${integration.bg} transition-all duration-300 transform hover:scale-105`}
+                className={`rounded-xl shadow-lg p-6 ${integration.bg} transition-all duration-300 transform hover:scale-105 ${locked ? 'opacity-70' : ''}`}
               >
                 <div className="flex items-center space-x-4 mb-4">
                   {integration.profilePicture && integration.connected ? (
@@ -405,6 +410,11 @@ export default function ConnectPage() {
                   <div>
                     <h2 className="text-xl font-semibold text-gray-800">{integration.name}</h2>
                     <p className="text-sm text-gray-600">{integration.description}</p>
+                    {locked && (
+                      <div className="mt-2 inline-flex items-center text-xs text-purple-800 bg-purple-100 border border-purple-200 px-2 py-1 rounded">
+                        <FaLock className="mr-1" /> Stripe ist im Basic-Paket gesperrt. Bitte upgraden.
+                      </div>
+                    )}
                     {integration.connected && integration.nameOrUsername && (
                       <p className="text-sm font-medium text-gray-700 mt-1">
                         Connected as: {integration.nameOrUsername}
@@ -420,8 +430,9 @@ export default function ConnectPage() {
                     {integration.name === 'Stripe' ? (
                       <>
                         <button
-                          onClick={() => router.push('/dashboard/payments/save-card')}
+                          onClick={() => !locked && router.push('/dashboard/payments/save-card')}
                           className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium py-2 px-4 rounded transition"
+                          disabled={locked}
                         >
                           Manage
                         </button>
@@ -466,17 +477,20 @@ export default function ConnectPage() {
                     onClick={() =>
                       integration.name === 'mobile.de'
                         ? setShowMobileDePopup(true)
-                        : (window.location.href = integration.href || '#')
+                        : (!locked ? (window.location.href = integration.href || '#') : undefined)
                     }
-                    className={`block text-center ${integration.href || integration.name === 'mobile.de' ? 'bg-black hover:bg-opacity-80' : 'bg-gray-400 cursor-not-allowed'
+                    className={`block text-center ${
+                      (integration.href || integration.name === 'mobile.de') && !locked
+                        ? 'bg-black hover:bg-opacity-80'
+                        : 'bg-gray-400 cursor-not-allowed'
                       } text-white text-sm font-medium py-2 px-4 rounded transition`}
-                    disabled={!integration.href && integration.name !== 'mobile.de'}
+                    disabled={(!integration.href && integration.name !== 'mobile.de') || locked}
                   >
                     Connect
                   </button>
                 )}
               </div>
-            ))}
+            );})}
           </div>
         )}
         {showMobileDePopup && (
