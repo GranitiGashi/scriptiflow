@@ -24,6 +24,7 @@ export default function MobileDeAutopostPage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -75,6 +76,49 @@ export default function MobileDeAutopostPage() {
     }
   }
 
+  async function testDummy() {
+    setTesting(true);
+    setMessage(null);
+    setError(null);
+    try {
+      // Seed a dummy listing with sample images
+      const seed = await authManager.authenticatedFetch(`${baseDomain}/api/mobilede/seed-dummy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          mobile_ad_id: `test-${Date.now()}`,
+          make: 'MERCEDES-BENZ',
+          model: 'C 43 AMG',
+          detail_url: 'https://suchen.mobile.de/auto-inserat/mercedes-benz-c-43-amg/421256024.html',
+          images: [
+            'https://img.classistatic.de/api/v1/mo-prod/images/df/df91b356-a3d3-4764-b803-d91f38cfcd9c?rule=mo-1600.jpg',
+            'https://img.classistatic.de/api/v1/mo-prod/images/f5/f5d00a05-e975-4272-9068-fd9af8756cb8?rule=mo-1600.jpg',
+            'https://img.classistatic.de/api/v1/mo-prod/images/b7/b70949b2-1f1f-4ef3-8b73-c827324916a4?rule=mo-1600.jpg',
+          ],
+        }),
+      });
+      if (!seed.ok) {
+        const body = await seed.json().catch(() => ({}));
+        throw new Error(body?.error || 'Failed to seed dummy listing');
+      }
+      // Process queued jobs once
+      const run = await authManager.authenticatedFetch(`${baseDomain}/api/social/jobs/run-once`, {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+      });
+      const body = await run.json().catch(() => ({}));
+      if (!run.ok) {
+        throw new Error(body?.error || 'Failed to run jobs');
+      }
+      setMessage(`Dummy queued and processed. Jobs processed: ${body?.processed ?? 0}`);
+      await loadData();
+    } catch (e: any) {
+      setError(e?.message || 'Dummy test failed');
+    } finally {
+      setTesting(false);
+    }
+  }
+
   function fmt(d?: string | null) {
     try { return d ? new Date(d).toLocaleString() : '—'; } catch { return '—'; }
   }
@@ -92,6 +136,9 @@ export default function MobileDeAutopostPage() {
               <button onClick={syncNow} disabled={syncing} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60">
                 {syncing ? 'Syncing…' : 'Sync now'}
               </button>
+            <button onClick={testDummy} disabled={testing} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-60">
+              {testing ? 'Testing…' : 'Test dummy post'}
+            </button>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
