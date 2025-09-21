@@ -83,36 +83,85 @@ export default function InventoryPage() {
 
         const data = await res.json();
 
-        // Map API response to Car[]
-        const rawCars = data['search-result']?.ads?.ad || [];
-        const mappedCars: Car[] = rawCars.map((c: any) => ({
-          id: c['@key'],
-          make: c.vehicle.make['@key'],
-          model: c.vehicle.model['@key'],
-          modelDescription: c.vehicle['model-description']?.['@value'] || '',
-          price: c.price['consumer-price-amount']?.['@value'] || '',
-          currency: c.price['@currency'] || 'EUR',
-          image:
-            c.images?.image?.representation?.[0]?.['@url'] || null,
-          mileage: c.vehicle.specifics.mileage?.['@value'] || '',
-          firstRegistration: c.vehicle.specifics['first-registration']?.['@value'] || '',
-          fuel: c.vehicle.specifics.fuel?.['@key'] || '',
-          power: c.vehicle.specifics.power?.['@value'] || '',
-          gearbox: c.vehicle.specifics.gearbox?.['@key'] || '',
-          url: c['detail-page']?.['@url'] || '#',
-          dealerCity: c?.seller?.address?.city?.['@value'] || c?.seller?.location?.city?.['@value'] || null,
-          dealerZip: c?.seller?.address?.['postal-code']?.['@value'] || c?.seller?.location?.zipcode?.['@value'] || null,
-          dealerLat: (() => {
-            const v = c?.seller?.location?.coordinates?.latitude?.['@value'] || c?.seller?.location?.latitude?.['@value'] || c?.seller?.location?.latitude || null;
-            const n = typeof v === 'string' ? parseFloat(v) : (typeof v === 'number' ? v : null);
-            return Number.isFinite(n as number) ? (n as number) : null;
-          })(),
-          dealerLon: (() => {
-            const v = c?.seller?.location?.coordinates?.longitude?.['@value'] || c?.seller?.location?.longitude?.['@value'] || c?.seller?.location?.longitude || null;
-            const n = typeof v === 'string' ? parseFloat(v) : (typeof v === 'number' ? v : null);
-            return Number.isFinite(n as number) ? (n as number) : null;
-          })(),
-        }));
+        // Support both legacy (XML-like JSON) and new JSON formats
+        const rawCars: any[] = Array.isArray(data?.['search-result']?.ads?.ad)
+          ? data['search-result'].ads.ad
+          : Array.isArray(data?.ads)
+          ? data.ads
+          : Array.isArray(data)
+          ? data
+          : [];
+
+        const mappedCars: Car[] = rawCars.map((c: any) => {
+          const id = c['@key'] || c.mobileAdId || c.id || '';
+          const make = c?.vehicle?.make?.['@key'] || c?.vehicle?.make || c?.make || '';
+          const model = c?.vehicle?.model?.['@key'] || c?.vehicle?.model || c?.model || '';
+          const modelDescription = c?.vehicle?.['model-description']?.['@value'] || c?.modelDescription || '';
+
+          const priceVal = c?.price?.['consumer-price-amount']?.['@value']
+            || c?.price?.consumerPrice?.amount
+            || c?.price?.amount
+            || '';
+          const currency = c?.price?.['@currency']
+            || c?.price?.consumerPrice?.currency
+            || c?.currency
+            || 'EUR';
+
+          let image: string | null = null;
+          if (Array.isArray(c?.images) && c.images.length > 0) {
+            const i0 = c.images[0];
+            image = i0?.xxxl || i0?.xxl || i0?.xl || i0?.l || i0?.m || i0?.s || null;
+          } else if (c?.images?.image?.representation?.[0]?.['@url']) {
+            image = c.images.image.representation[0]['@url'];
+          }
+
+          const mileage = c?.vehicle?.specifics?.mileage?.['@value'] || c?.mileage?.value || c?.mileage || '';
+          const firstRegistration = c?.vehicle?.specifics?.['first-registration']?.['@value'] || c?.firstRegistration || '';
+          const fuel = c?.vehicle?.specifics?.fuel?.['@key'] || c?.fuel || '';
+          const power = c?.vehicle?.specifics?.power?.['@value'] || c?.power || '';
+          const gearbox = c?.vehicle?.specifics?.gearbox?.['@key'] || c?.gearbox || '';
+          const url = c?.['detail-page']?.['@url'] || c?.detailPageUrl || '#';
+
+          const dealerCity = c?.seller?.address?.city?.['@value']
+            || c?.seller?.address?.city
+            || c?.seller?.geoData?.city
+            || null;
+          const dealerZip = c?.seller?.address?.['postal-code']?.['@value']
+            || c?.seller?.address?.zipcode
+            || c?.seller?.geoData?.zipcode
+            || null;
+
+          const latRaw = c?.seller?.location?.coordinates?.latitude?.['@value']
+            || c?.seller?.location?.latitude?.['@value']
+            || c?.seller?.location?.latitude
+            || c?.seller?.geoData?.lat;
+          const lonRaw = c?.seller?.location?.coordinates?.longitude?.['@value']
+            || c?.seller?.location?.longitude?.['@value']
+            || c?.seller?.location?.longitude
+            || c?.seller?.geoData?.lon;
+          const latNum = typeof latRaw === 'string' ? parseFloat(latRaw) : (typeof latRaw === 'number' ? latRaw : null);
+          const lonNum = typeof lonRaw === 'string' ? parseFloat(lonRaw) : (typeof lonRaw === 'number' ? lonRaw : null);
+
+          return {
+            id: String(id),
+            url,
+            make,
+            model,
+            modelDescription,
+            price: String(priceVal),
+            currency,
+            image,
+            mileage: String(mileage),
+            firstRegistration: String(firstRegistration),
+            fuel: String(fuel),
+            power: String(power),
+            gearbox: String(gearbox),
+            dealerCity,
+            dealerZip,
+            dealerLat: Number.isFinite(latNum as number) ? (latNum as number) : null,
+            dealerLon: Number.isFinite(lonNum as number) ? (lonNum as number) : null,
+          };
+        });
 
         setCars(mappedCars);
       } catch (err: any) {
