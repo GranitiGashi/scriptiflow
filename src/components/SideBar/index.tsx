@@ -41,7 +41,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     ],
     client: [
       { name: "Integrations", path: "/dashboard/social-media", icon: "fab fa-facebook" },
-      {name: "My Inventory", path: "/dashboard/inventory",icon: "fab fa-facebook"},
+      { name: "Autopost", path: "/dashboard/social-media/autopost", icon: "fas fa-bolt" },
+      { name: "My Inventory", path: "/dashboard/inventory", icon: "fab fa-facebook"},
     ],
   };
 
