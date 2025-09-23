@@ -2,6 +2,7 @@
 
 import DashboardLayout from '@/components/DashboardLayout';
 import { FaFacebook, FaInstagram, FaStripe, FaCar, FaLock } from 'react-icons/fa';
+import { SiWhatsapp } from 'react-icons/si';
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import authManager from '@/lib/auth';
@@ -41,6 +42,10 @@ export default function ConnectPage() {
   const [mobileDePassword, setMobileDePassword] = useState<string>('');
   const [mobileDeCompanyName, setMobileDeCompanyName] = useState<string>('');
   const [stripe, setStripe] = useState<{ connected: boolean; cardBrand: string | null; last4: string | null }>({ connected: false, cardBrand: null, last4: null });
+  const [wa, setWa] = useState<{ connected: boolean; phoneNumberId: string | null }>({ connected: false, phoneNumberId: null });
+  const [waOpen, setWaOpen] = useState(false);
+  const [waPhoneNumberId, setWaPhoneNumberId] = useState('');
+  const [waAccessToken, setWaAccessToken] = useState('');
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -186,6 +191,20 @@ export default function ConnectPage() {
     fetchMobileDeStatus();
     fetchStripeStatus();
     fetchLoginUrl();
+    // Fetch WhatsApp status
+    (async () => {
+      try {
+        const res = await authManager.authenticatedFetch(`${baseDomain}/api/whatsapp/credentials`, { headers: { 'Accept': 'application/json' } });
+        if (res.ok) {
+          const data = await res.json();
+          setWa({ connected: true, phoneNumberId: data.waba_phone_number_id || null });
+        } else {
+          setWa({ connected: false, phoneNumberId: null });
+        }
+      } catch (_) {
+        setWa({ connected: false, phoneNumberId: null });
+      }
+    })();
   }, [userId, baseDomain]);
 
   // Handle OAuth redirect
@@ -337,6 +356,16 @@ export default function ConnectPage() {
         bg: 'bg-pink-50 hover:bg-pink-100',
       },
       {
+        name: 'WhatsApp',
+        description: 'Receive and reply to WhatsApp messages from your dashboard.',
+        icon: <SiWhatsapp className="text-green-600 text-4xl" />,
+        href: '#',
+        connected: wa.connected,
+        nameOrUsername: wa.phoneNumberId ? `Phone ID: ${wa.phoneNumberId}` : null,
+        profilePicture: null,
+        bg: 'bg-green-50 hover:bg-green-100',
+      },
+      {
         name: 'mobile.de',
         description: 'Connect your mobile.de account to manage car listings.',
         icon: <FaCar className="text-green-600 text-4xl" />,
@@ -464,6 +493,13 @@ export default function ConnectPage() {
                         onClick={() =>
                           integration.name === 'mobile.de'
                             ? handleMobileDeDisconnect()
+                            : integration.name === 'WhatsApp'
+                            ? (async () => {
+                                try {
+                                  const res = await authManager.authenticatedFetch(`${baseDomain}/api/whatsapp/credentials`, { method: 'DELETE' });
+                                  if (res.ok) setWa({ connected: false, phoneNumberId: null });
+                                } catch {}
+                              })()
                             : alert(`Disconnect ${integration.name} not implemented yet`)
                         }
                         className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 px-4 rounded transition"
@@ -477,6 +513,8 @@ export default function ConnectPage() {
                     onClick={() =>
                       integration.name === 'mobile.de'
                         ? setShowMobileDePopup(true)
+                        : integration.name === 'WhatsApp'
+                        ? setWaOpen(true)
                         : (!locked ? (window.location.href = integration.href || '#') : undefined)
                     }
                     className={`block text-center ${
@@ -532,6 +570,49 @@ export default function ConnectPage() {
                   >
                     Connect
                   </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        {waOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">Connect WhatsApp</h2>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    const res = await authManager.authenticatedFetch(`${baseDomain}/api/whatsapp/connect`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ waba_phone_number_id: waPhoneNumberId, access_token: waAccessToken }),
+                    });
+                    if (res.ok) {
+                      setWa({ connected: true, phoneNumberId: waPhoneNumberId });
+                      setWaOpen(false);
+                      setWaPhoneNumberId('');
+                      setWaAccessToken('');
+                    } else {
+                      const err = await res.json();
+                      alert(err.error || 'Failed to connect');
+                    }
+                  } catch (e) {
+                    alert('Failed to connect');
+                  }
+                }}
+              >
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Phone Number ID</label>
+                  <input value={waPhoneNumberId} onChange={(e) => setWaPhoneNumberId(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50" required />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Access Token</label>
+                  <input value={waAccessToken} onChange={(e) => setWaAccessToken(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50" required />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <button type="button" onClick={() => setWaOpen(false)} className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded">Cancel</button>
+                  <button type="submit" className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded">Connect</button>
                 </div>
               </form>
             </div>
