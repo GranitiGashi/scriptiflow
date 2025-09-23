@@ -1,7 +1,7 @@
 'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { FaFacebook, FaInstagram, FaStripe, FaCar, FaLock } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaStripe, FaCar, FaLock, FaGoogle, FaMicrosoft } from 'react-icons/fa';
 import { SiWhatsapp } from 'react-icons/si';
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -46,6 +46,7 @@ export default function ConnectPage() {
   const [waOpen, setWaOpen] = useState(false);
   const [waPhoneNumberId, setWaPhoneNumberId] = useState('');
   const [waAccessToken, setWaAccessToken] = useState('');
+  const [emailStatus, setEmailStatus] = useState<{ gmail: { connected: boolean; account_email?: string | null }, outlook: { connected: boolean; account_email?: string | null } }>({ gmail: { connected: false }, outlook: { connected: false } });
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -205,6 +206,16 @@ export default function ConnectPage() {
         setWa({ connected: false, phoneNumberId: null });
       }
     })();
+    // Email status
+    (async () => {
+      try {
+        const res = await authManager.authenticatedFetch(`${baseDomain}/api/email/status`, { headers: { 'Accept': 'application/json' } });
+        if (res.ok) {
+          const data = await res.json();
+          setEmailStatus({ gmail: data.gmail || { connected: false }, outlook: data.outlook || { connected: false } });
+        }
+      } catch (_) {}
+    })();
   }, [userId, baseDomain]);
 
   // Handle OAuth redirect
@@ -356,6 +367,30 @@ export default function ConnectPage() {
         bg: 'bg-pink-50 hover:bg-pink-100',
       },
       {
+        name: 'Gmail',
+        description: 'Detect car leads from your Gmail inbox and reply here.',
+        icon: <FaGoogle className="text-red-600 text-4xl" />,
+        href: undefined,
+        connected: emailStatus.gmail.connected,
+        nameOrUsername: emailStatus.gmail.account_email || null,
+        profilePicture: null,
+        bg: 'bg-red-50 hover:bg-red-100',
+        type: 'email',
+        provider: 'gmail',
+      },
+      {
+        name: 'Outlook',
+        description: 'Detect car leads from Outlook (Microsoft 365).',
+        icon: <FaMicrosoft className="text-blue-700 text-4xl" />,
+        href: undefined,
+        connected: emailStatus.outlook.connected,
+        nameOrUsername: emailStatus.outlook.account_email || null,
+        profilePicture: null,
+        bg: 'bg-blue-50 hover:bg-blue-100',
+        type: 'email',
+        provider: 'outlook',
+      },
+      {
         name: 'WhatsApp',
         description: 'Receive and reply to WhatsApp messages from your dashboard.',
         icon: <SiWhatsapp className="text-green-600 text-4xl" />,
@@ -392,7 +427,7 @@ export default function ConnectPage() {
   );
 
   return (
-    <DashboardLayout>
+    // <DashboardLayout>
       <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
         <h1 className="text-3xl font-bold mb-8 text-center text-gray-800">Connect Your Accounts</h1>
         {error && (
@@ -420,7 +455,8 @@ export default function ConnectPage() {
             {integrations.map((integration) => {
               const tier = getUserTier();
               const isStripe = integration.name === 'Stripe';
-              const locked = isStripe && tier === 'basic';
+              const isEmail = (integration as any).type === 'email';
+              const locked = (isStripe && tier === 'basic') || (isEmail && tier === 'basic');
               return (
               <div
                 key={integration.name}
@@ -441,7 +477,7 @@ export default function ConnectPage() {
                     <p className="text-sm text-gray-600">{integration.description}</p>
                     {locked && (
                       <div className="mt-2 inline-flex items-center text-xs text-purple-800 bg-purple-100 border border-purple-200 px-2 py-1 rounded">
-                        <FaLock className="mr-1" /> Stripe ist im Basic-Paket gesperrt. Bitte upgraden.
+                        <FaLock className="mr-1" /> {(integration as any).type === 'email' ? 'Email integrations' : 'Stripe'} sind im Basic-Paket gesperrt. Bitte upgraden.
                       </div>
                     )}
                     {integration.connected && integration.nameOrUsername && (
@@ -500,7 +536,19 @@ export default function ConnectPage() {
                                   if (res.ok) setWa({ connected: false, phoneNumberId: null });
                                 } catch {}
                               })()
-                            : alert(`Disconnect ${integration.name} not implemented yet`)
+                            : (async () => {
+                                const provider = (integration as any).provider;
+                                if (!provider) { alert(`Disconnect ${integration.name} not implemented yet`); return; }
+                                try {
+                                  const res = await authManager.authenticatedFetch(`${baseDomain}/api/email/disconnect?provider=${encodeURIComponent(provider)}`, { method: 'DELETE' });
+                                  if (res.ok) {
+                                    setEmailStatus((s) => ({
+                                      gmail: provider === 'gmail' ? { connected: false } : s.gmail,
+                                      outlook: provider === 'outlook' ? { connected: false } : s.outlook,
+                                    }));
+                                  }
+                                } catch {}
+                              })()
                         }
                         className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 px-4 rounded transition"
                       >
@@ -515,14 +563,27 @@ export default function ConnectPage() {
                         ? setShowMobileDePopup(true)
                         : integration.name === 'WhatsApp'
                         ? setWaOpen(true)
-                        : (!locked ? (window.location.href = integration.href || '#') : undefined)
+                        : (!locked ? (async () => {
+                            const anyInt = integration as any;
+                            if (anyInt.provider === 'gmail') {
+                              const res = await authManager.authenticatedFetch(`${baseDomain}/api/email/gmail/login-url`);
+                              const data = await res.json();
+                              if (data?.auth_url) window.location.href = data.auth_url;
+                            } else if (anyInt.provider === 'outlook') {
+                              const res = await authManager.authenticatedFetch(`${baseDomain}/api/email/outlook/login-url`);
+                              const data = await res.json();
+                              if (data?.auth_url) window.location.href = data.auth_url;
+                            } else if (integration.href) {
+                              window.location.href = integration.href;
+                            }
+                          })() : undefined)
                     }
                     className={`block text-center ${
-                      (integration.href || integration.name === 'mobile.de') && !locked
+                      (!locked)
                         ? 'bg-black hover:bg-opacity-80'
                         : 'bg-gray-400 cursor-not-allowed'
                       } text-white text-sm font-medium py-2 px-4 rounded transition`}
-                    disabled={(!integration.href && integration.name !== 'mobile.de') || locked}
+                    disabled={locked}
                   >
                     Connect
                   </button>
@@ -579,46 +640,90 @@ export default function ConnectPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
               <h2 className="text-xl font-semibold mb-4">Connect WhatsApp</h2>
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  try {
-                    const res = await authManager.authenticatedFetch(`${baseDomain}/api/whatsapp/connect`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ waba_phone_number_id: waPhoneNumberId, access_token: waAccessToken }),
-                    });
-                    if (res.ok) {
-                      setWa({ connected: true, phoneNumberId: waPhoneNumberId });
-                      setWaOpen(false);
-                      setWaPhoneNumberId('');
-                      setWaAccessToken('');
-                    } else {
-                      const err = await res.json();
-                      alert(err.error || 'Failed to connect');
-                    }
-                  } catch (e) {
-                    alert('Failed to connect');
-                  }
-                }}
-              >
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Phone Number ID</label>
-                  <input value={waPhoneNumberId} onChange={(e) => setWaPhoneNumberId(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50" required />
+              <div className="space-y-6">
+                <div className="p-3 border rounded">
+                  <div className="font-medium mb-2">Recommended: Auto-detect phone numbers (via Facebook login)</div>
+                  <button
+                    className="bg-black text-white px-4 py-2 rounded"
+                    onClick={async () => {
+                      try {
+                        const res = await authManager.authenticatedFetch(`${baseDomain}/api/whatsapp/phone-numbers`);
+                        if (!res.ok) {
+                          const err = await res.json();
+                          alert(err.error || 'Failed to fetch numbers. Ensure Facebook is connected.');
+                          return;
+                        }
+                        const data = await res.json();
+                        if (!Array.isArray(data) || data.length === 0) {
+                          alert('No WhatsApp Business numbers found. Make sure your Business is set up.');
+                          return;
+                        }
+                        const pick = data[0];
+                        // Save credentials using discovered phone number; access token is pulled on send from FB token
+                        const save = await authManager.authenticatedFetch(`${baseDomain}/api/whatsapp/connect`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ waba_phone_number_id: pick.phone_number_id, waba_business_account_id: pick.waba_business_account_id, access_token: 'fb_token_managed' })
+                        });
+                        if (save.ok) {
+                          setWa({ connected: true, phoneNumberId: pick.phone_number_id });
+                          setWaOpen(false);
+                        } else {
+                          const e = await save.json();
+                          alert(e.error || 'Failed to save WhatsApp credentials');
+                        }
+                      } catch (e) {
+                        alert('Failed to fetch WhatsApp numbers');
+                      }
+                    }}
+                  >
+                    Connect via Facebook
+                  </button>
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Access Token</label>
-                  <input value={waAccessToken} onChange={(e) => setWaAccessToken(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50" required />
+                <div className="p-3 border rounded">
+                  <div className="font-medium mb-2">Manual setup</div>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      try {
+                        const res = await authManager.authenticatedFetch(`${baseDomain}/api/whatsapp/connect`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ waba_phone_number_id: waPhoneNumberId, access_token: waAccessToken }),
+                        });
+                        if (res.ok) {
+                          setWa({ connected: true, phoneNumberId: waPhoneNumberId });
+                          setWaOpen(false);
+                          setWaPhoneNumberId('');
+                          setWaAccessToken('');
+                        } else {
+                          const err = await res.json();
+                          alert(err.error || 'Failed to connect');
+                        }
+                      } catch (e) {
+                        alert('Failed to connect');
+                      }
+                    }}
+                  >
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700">Phone Number ID</label>
+                      <input value={waPhoneNumberId} onChange={(e) => setWaPhoneNumberId(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50" required />
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700">Access Token</label>
+                      <input value={waAccessToken} onChange={(e) => setWaAccessToken(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50" required />
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <button type="button" onClick={() => setWaOpen(false)} className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded">Cancel</button>
+                      <button type="submit" className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded">Connect</button>
+                    </div>
+                  </form>
                 </div>
-                <div className="flex justify-end space-x-2">
-                  <button type="button" onClick={() => setWaOpen(false)} className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded">Cancel</button>
-                  <button type="submit" className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded">Connect</button>
-                </div>
-              </form>
+              </div>
             </div>
           </div>
         )}
       </div>
-    </DashboardLayout>
+    // </DashboardLayout>
   );
 }
