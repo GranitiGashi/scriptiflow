@@ -19,7 +19,7 @@ interface Lead {
   listing_link: string | null;
 }
 
-export default function EmailLeadsPage() {
+export default function EmailInboxPageAlias() {
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);

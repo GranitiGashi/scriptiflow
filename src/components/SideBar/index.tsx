@@ -47,8 +47,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         items.push({ name: "Integrations", path: "/dashboard/social-media", icon: "fab fa-facebook" });
         items.push({ name: "Autopost", path: "/dashboard/social-media/autopost", icon: "fas fa-bolt" });
         items.push({ name: "My Inventory", path: "/dashboard/inventory", icon: "fab fa-facebook"});
+        items.push({ name: "Contacts", path: "/dashboard/contacts", icon: "fas fa-address-book"});
         items.push({ name: "Inbox", path: "/dashboard/inbox", icon: "fas fa-inbox"});
-        items.push({ name: "Email Leads", path: "/dashboard/email-leads", icon: "fas fa-envelope"});
+        items.push({ name: "Email Inbox", path: "/dashboard/email-inbox", icon: "fas fa-envelope"});
         // premium only pages reserved (none yet)
         return items;
       }
