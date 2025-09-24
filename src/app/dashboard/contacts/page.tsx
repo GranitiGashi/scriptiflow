@@ -175,6 +175,7 @@ export default function ContactsPage() {
             getRowId={(r) => r.id}
             loading={loading}
             disableRowSelectionOnClick
+            onRowClick={(p) => { window.location.href = `/dashboard/contacts/${p.row.id}`; }}
             slots={{ toolbar: GridToolbar }}
             paginationModel={{ page: Math.floor(offset / limit), pageSize: limit }}
             onPaginationModelChange={(m) => { setLimit(m.pageSize); setOffset(m.page * m.pageSize); }}
