@@ -4,6 +4,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useEffect, useState } from 'react';
 import authManager from '@/lib/auth';
 import { Box, Button, Divider, TextField } from '@mui/material';
+import DOMPurify from 'dompurify';
 
 interface Lead {
   id: string;
@@ -12,6 +13,7 @@ interface Lead {
   from_name: string | null;
   subject: string | null;
   snippet: string | null;
+  body?: string | null;
   received_at: string;
   thread_id: string | null;
   message_id: string | null;
@@ -68,7 +70,7 @@ export default function EmailInboxPage() {
                 </Box>
                 <Divider />
                 <Box sx={{ p: 2, flex: 1, overflow: 'auto' }}>
-                  <Box sx={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{active.snippet}</Box>
+                  <Box sx={{ fontSize: 14 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(active.body || active.snippet || '') }} />
                 </Box>
                 <Divider />
                 <Box sx={{ p: 1.5, display: 'flex', gap: 1 }}>

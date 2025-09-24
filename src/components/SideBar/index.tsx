@@ -50,6 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         items.push({ name: "Contacts", path: "/dashboard/contacts", icon: "fas fa-address-book"});
         items.push({ name: "Inbox", path: "/dashboard/inbox", icon: "fas fa-inbox"});
         items.push({ name: "Email Inbox", path: "/dashboard/email-inbox", icon: "fas fa-envelope"});
+        items.push({ name: "Calendar", path: "/dashboard/calendar", icon: "fas fa-calendar"});
         // premium only pages reserved (none yet)
         return items;
       }
