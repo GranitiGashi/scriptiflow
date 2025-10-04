@@ -18,6 +18,7 @@ type SetupStep = {
 type ConnectionStatus = {
   stripe: boolean;
   mobilede: boolean;
+  autoscout24: boolean;
   facebook: boolean;
   instagram: boolean;
 };
@@ -26,6 +27,7 @@ export default function AccountSetupProgress() {
   const [connections, setConnections] = useState<ConnectionStatus>({
     stripe: false,
     mobilede: false,
+    autoscout24: false,
     facebook: false,
     instagram: false,
   });
@@ -62,6 +64,7 @@ export default function AccountSetupProgress() {
 
       let socialConnections = { facebook: false, instagram: false };
       let mobiledeConnected = false;
+      let as24Connected = false;
 
       if (userId) {
         // Check social connections (Facebook, Instagram)
@@ -92,11 +95,23 @@ export default function AccountSetupProgress() {
         } catch (err) {
           console.log('Mobile.de connection check failed:', err);
         }
+
+        // Check AutoScout24 connection
+        try {
+          const as24Res = await authManager.authenticatedFetch(
+            `${baseDomain}/api/autoscout24/connect`,
+            { headers: { Accept: 'application/json' } }
+          );
+          as24Connected = as24Res.ok;
+        } catch (err) {
+          console.log('AutoScout24 connection check failed:', err);
+        }
       }
 
       setConnections({
         stripe: stripeConnected,
         mobilede: mobiledeConnected,
+        autoscout24: as24Connected,
         facebook: socialConnections.facebook,
         instagram: socialConnections.instagram,
       });
@@ -118,13 +133,13 @@ export default function AccountSetupProgress() {
       actionText: 'Connect Stripe',
     },
     {
-      id: 'mobilede',
-      title: 'Connect mobile.de',
-      description: 'Import your car listings from mobile.de',
+      id: 'inventory',
+      title: 'Connect Inventory (mobile.de or AutoScout24)',
+      description: 'Import your car listings from either marketplace',
       icon: <FaCar className="text-green-600" />,
-      completed: connections.mobilede,
+      completed: connections.mobilede || connections.autoscout24,
       actionUrl: '/dashboard/social-media',
-      actionText: 'Connect mobile.de',
+      actionText: 'Connect Inventory',
     },
     {
       id: 'social',

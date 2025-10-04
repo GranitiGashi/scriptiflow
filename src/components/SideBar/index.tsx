@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { getUserTier, hasTierOrAbove } from "@/lib/permissions";
+import authManager from '@/lib/auth';
 
 interface NavItem {
   name: string;
@@ -21,10 +22,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const router = useRouter();
   const pathname = usePathname();
   const [role, setRole] = useState<string | null>(null);
+  const [dealerLogoUrl, setDealerLogoUrl] = useState<string | null>(null);
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
 
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole);
+  }, []);
+
+  useEffect(() => {
+    async function loadAssets() {
+      try {
+        const res = await authManager.authenticatedFetch(`${baseDomain}/api/settings/assets`, {
+          headers: { Accept: 'application/json' }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.dealer_logo_url) setDealerLogoUrl(data.dealer_logo_url);
+        }
+      } catch {}
+    }
+    loadAssets();
   }, []);
 
   const staticNavItems: NavItem[] = [
@@ -75,6 +93,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
       `}
     >
+      {dealerLogoUrl && (
+        <div className="mb-4">
+          <img
+            src={dealerLogoUrl}
+            alt="Dealership Logo"
+            className="w-16 h-16 object-contain bg-white rounded p-1"
+          />
+        </div>
+      )}
       {/* Close Button at top right inside sidebar */}
       {/* <button
         onClick={onClose}

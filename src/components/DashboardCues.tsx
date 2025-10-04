@@ -31,6 +31,7 @@ type CueAction = {
 type ConnectionStatus = {
   stripe: boolean;
   mobilede: boolean;
+  autoscout24: boolean;
   facebook: boolean;
   instagram: boolean;
   hasPaymentMethod: boolean;
@@ -41,6 +42,7 @@ export default function DashboardCues() {
   const [connections, setConnections] = useState<ConnectionStatus>({
     stripe: false,
     mobilede: false,
+    autoscout24: false,
     facebook: false,
     instagram: false,
     hasPaymentMethod: false,
@@ -88,6 +90,7 @@ export default function DashboardCues() {
 
       let socialConnections = { facebook: false, instagram: false };
       let mobiledeConnected = false;
+      let as24Connected = false;
       let hasCars = false;
 
       if (userId) {
@@ -120,17 +123,37 @@ export default function DashboardCues() {
           console.log('Mobile.de connection check failed:', e);
         }
 
+        // Check AutoScout24 connection
+        try {
+          const as24Res = await authManager.authenticatedFetch(
+            `${baseDomain}/api/autoscout24/connect`,
+            { headers: { Accept: 'application/json' } }
+          );
+          as24Connected = as24Res.ok;
+        } catch (e) {
+          console.log('AutoScout24 connection check failed:', e);
+        }
+
         // Check if user has cars (mobile.de inventory)
-        if (mobiledeConnected) {
+        if (mobiledeConnected || as24Connected) {
           try {
-            const carsRes = await authManager.authenticatedFetch(`${baseDomain}/api/get-user-cars`, {
+            // Prefer mobile.de endpoint if connected; otherwise use AutoScout24 remote listings
+            const url = mobiledeConnected
+              ? `${baseDomain}/api/get-user-cars`
+              : `${baseDomain}/api/autoscout24/remote-listings`;
+            const carsRes = await authManager.authenticatedFetch(url, {
               headers: { Accept: 'application/json' }
             });
             if (carsRes.ok) {
               const carsData = await carsRes.json();
-              // mobile.de returns nested structure: search-result.ads.ad
-              const rawCars = carsData?.['search-result']?.ads?.ad || [];
-              hasCars = Array.isArray(rawCars) && rawCars.length > 0;
+              let count = 0;
+              if (mobiledeConnected) {
+                const rawCars = carsData?.['search-result']?.ads?.ad || [];
+                count = Array.isArray(rawCars) ? rawCars.length : 0;
+              } else {
+                count = Array.isArray(carsData) ? carsData.length : (Array.isArray(carsData?.items) ? carsData.items.length : 0);
+              }
+              hasCars = count > 0;
             }
           } catch (e) {
             console.log('Cars check failed:', e);
@@ -141,6 +164,7 @@ export default function DashboardCues() {
       setConnections({
         stripe: stripeConnected,
         mobilede: mobiledeConnected,
+        autoscout24: as24Connected,
         facebook: socialConnections.facebook,
         instagram: socialConnections.instagram,
         hasPaymentMethod,

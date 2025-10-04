@@ -34,6 +34,7 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mobileDeConnected, setMobileDeConnected] = useState(false);
+  const [as24Connected, setAs24Connected] = useState(false);
   const router = useRouter();
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
 
@@ -49,11 +50,23 @@ export default function InventoryPage() {
 
         if (!res.ok) throw new Error('Please connect your mobile.de account.');
         setMobileDeConnected(true);
+        // Also check AutoScout24; if mobile.de not connected, try AS24 instead
+        try {
+          const as24 = await authManager.authenticatedFetch(`${baseDomain}/api/autoscout24/connect`, { headers: { Accept: 'application/json' } });
+          if (as24.ok) setAs24Connected(true);
+        } catch (_) {}
       } catch (err: any) {
         console.error('Connection check failed:', err);
+        // If mobile.de not connected, try AS24 before redirecting
+        try {
+          const as24 = await authManager.authenticatedFetch(`${baseDomain}/api/autoscout24/connect`, { headers: { Accept: 'application/json' } });
+          if (as24.ok) {
+            setAs24Connected(true);
+            setError(null);
+            return;
+          }
+        } catch (_) {}
         setError(err.message);
-        
-        // Auth manager will handle token refresh/login redirect automatically
         if (err.message.includes('No valid access token')) {
           setError('Session expired. Please log in again.');
         } else {
@@ -67,13 +80,16 @@ export default function InventoryPage() {
 
   // Fetch cars after confirming connection
   useEffect(() => {
-    if (!mobileDeConnected) return;
+    if (!mobileDeConnected && !as24Connected) return;
 
     async function fetchCars() {
       setLoading(true);
       setError(null);
       try {
-        const res = await authManager.authenticatedFetch(`${baseDomain}/api/get-user-cars`, {
+        const url = mobileDeConnected
+          ? `${baseDomain}/api/get-user-cars`
+          : `${baseDomain}/api/autoscout24/remote-listings`;
+        const res = await authManager.authenticatedFetch(url, {
           headers: {
             Accept: 'application/json',
           },
@@ -87,35 +103,52 @@ export default function InventoryPage() {
         const data = await res.json();
 
         // Support both legacy (XML-like JSON) and new JSON formats
-        const rawCars: any[] = Array.isArray(data?.['search-result']?.ads?.ad)
-          ? data['search-result'].ads.ad
-          : Array.isArray(data?.ads)
-          ? data.ads
-          : Array.isArray(data)
-          ? data
-          : [];
+        let rawCars: any[] = [];
+        if (mobileDeConnected) {
+          rawCars = Array.isArray(data?.['search-result']?.ads?.ad)
+            ? data['search-result'].ads.ad
+            : Array.isArray(data?.ads)
+            ? data.ads
+            : Array.isArray(data)
+            ? data
+            : [];
+        } else {
+          rawCars = Array.isArray(data)
+            ? data
+            : (Array.isArray(data?.items) ? data.items : []);
+        }
 
         const mappedCars: Car[] = rawCars.map((c: any) => {
-          const id = c['@key'] || c.mobileAdId || c.id || '';
+          const id = c['@key'] || c.mobileAdId || c.id || c.listingId || '';
           const make = c?.vehicle?.make?.['@key'] || c?.vehicle?.make || c?.make || '';
           const model = c?.vehicle?.model?.['@key'] || c?.vehicle?.model || c?.model || '';
           const modelDescription = c?.vehicle?.['model-description']?.['@value'] || c?.modelDescription || '';
 
-          const priceVal = c?.price?.['consumer-price-amount']?.['@value']
+          const priceVal = (c?.price?.['consumer-price-amount']?.['@value']
             || c?.price?.consumerPrice?.amount
             || c?.price?.amount
+            || c?.price)
             || '';
-          const currency = c?.price?.['@currency']
+          const currency = (c?.price?.['@currency']
             || c?.price?.consumerPrice?.currency
-            || c?.currency
+            || c?.currency)
             || 'EUR';
 
           let image: string | null = null;
-          if (Array.isArray(c?.images) && c.images.length > 0) {
-            const i0 = c.images[0];
-            image = i0?.xxxl || i0?.xxl || i0?.xl || i0?.l || i0?.m || i0?.s || null;
-          } else if (c?.images?.image?.representation?.[0]?.['@url']) {
-            image = c.images.image.representation[0]['@url'];
+          if (mobileDeConnected) {
+            if (Array.isArray(c?.images) && c.images.length > 0) {
+              const i0 = c.images[0];
+              image = i0?.xxxl || i0?.xxl || i0?.xl || i0?.l || i0?.m || i0?.s || null;
+            } else if (c?.images?.image?.representation?.[0]?.['@url']) {
+              image = c.images.image.representation[0]['@url'];
+            }
+          } else {
+            // AutoScout24: try common fields
+            const imgs = Array.isArray(c?.images) ? c.images : (Array.isArray(c?.media) ? c.media : []);
+            if (imgs.length) {
+              const i0 = imgs[0];
+              image = i0?.url || i0?.href || i0?.source || null;
+            }
           }
 
           const mileage = c?.vehicle?.specifics?.mileage?.['@value'] || c?.mileage?.value || c?.mileage || '';
@@ -123,7 +156,7 @@ export default function InventoryPage() {
           const fuel = c?.vehicle?.specifics?.fuel?.['@key'] || c?.fuel || '';
           const power = c?.vehicle?.specifics?.power?.['@value'] || c?.power || '';
           const gearbox = c?.vehicle?.specifics?.gearbox?.['@key'] || c?.gearbox || '';
-          const url = c?.['detail-page']?.['@url'] || c?.detailPageUrl || '#';
+          const url = c?.['detail-page']?.['@url'] || c?.detailPageUrl || c?.publicUrl || '#';
 
           const dealerCity = c?.seller?.address?.city?.['@value']
             || c?.seller?.address?.city

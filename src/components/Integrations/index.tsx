@@ -33,14 +33,18 @@ export default function ConnectPage() {
     dealership_name: null,
     logo_url: null,
   });
+  const [as24, setAS24] = useState<{ client_id: string | null }>({ client_id: null });
   const [loginUrl, setLoginUrl] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [showMobileDePopup, setShowMobileDePopup] = useState<boolean>(false);
+  const [showAS24Popup, setShowAS24Popup] = useState<boolean>(false);
   const [mobileDeUsername, setMobileDeUsername] = useState<string>('');
   const [mobileDePassword, setMobileDePassword] = useState<string>('');
   const [mobileDeCompanyName, setMobileDeCompanyName] = useState<string>('');
+  const [as24Username, setAs24Username] = useState<string>('');
+  const [as24Password, setAs24Password] = useState<string>('');
   const [stripe, setStripe] = useState<{ connected: boolean; cardBrand: string | null; last4: string | null }>({ connected: false, cardBrand: null, last4: null });
   const [wa, setWa] = useState<{ connected: boolean; phoneNumberId: string | null }>({ connected: false, phoneNumberId: null });
   const [waOpen, setWaOpen] = useState(false);
@@ -188,8 +192,31 @@ export default function ConnectPage() {
       }
     }
 
+    async function fetchAS24Status() {
+      try {
+        const token = localStorage.getItem('access_token');
+        const refreshToken = localStorage.getItem('refresh_token');
+        if (!token) {
+          throw new Error('No access token found. Please log in again.');
+        }
+        const res = await fetch(`${baseDomain}/api/autoscout24/connect`, {
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'x-refresh-token': `${refreshToken}`,
+          },
+        });
+        if (!res.ok) { setAS24({ client_id: null }); return; }
+        const data = await res.json();
+        setAS24({ client_id: data.username || null });
+      } catch (_) {
+        setAS24({ client_id: null });
+      }
+    }
+
     fetchSocialStatus();
     fetchMobileDeStatus();
+    fetchAS24Status();
     fetchStripeStatus();
     fetchLoginUrl();
     // Fetch WhatsApp status
@@ -411,6 +438,16 @@ export default function ConnectPage() {
         bg: 'bg-green-50 hover:bg-green-100',
       },
       {
+        name: 'AutoScout24',
+        description: 'Connect your AutoScout24 account to manage car listings.',
+        icon: <FaCar className="text-yellow-600 text-4xl" />,
+        href: '#',
+        connected: !!as24?.client_id,
+        nameOrUsername: as24?.client_id || null,
+        profilePicture: null,
+        bg: 'bg-yellow-50 hover:bg-yellow-100',
+      },
+      {
         name: 'Stripe',
         description: 'Connect your Stripe account to accept payments.',
         icon: <FaStripe className="text-purple-600 text-4xl" />,
@@ -529,6 +566,13 @@ export default function ConnectPage() {
                         onClick={() =>
                           integration.name === 'mobile.de'
                             ? handleMobileDeDisconnect()
+                            : integration.name === 'AutoScout24'
+                            ? (async () => {
+                                try {
+                                  const res = await authManager.authenticatedFetch(`${baseDomain}/api/autoscout24/connect`, { method: 'DELETE' });
+                                  if (res.ok) setAS24({ client_id: null });
+                                } catch {}
+                              })()
                             : integration.name === 'WhatsApp'
                             ? (async () => {
                                 try {
@@ -561,6 +605,8 @@ export default function ConnectPage() {
                     onClick={() =>
                       integration.name === 'mobile.de'
                         ? setShowMobileDePopup(true)
+                        : integration.name === 'AutoScout24'
+                        ? setShowAS24Popup(true)
                         : integration.name === 'WhatsApp'
                         ? setWaOpen(true)
                         : (!locked ? (async () => {
@@ -633,6 +679,76 @@ export default function ConnectPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+        {showAS24Popup && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">Connect to AutoScout24</h2>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setError(null);
+                  try {
+                    const res = await authManager.authenticatedFetch(`${baseDomain}/api/autoscout24/connect`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ username: as24Username, password: as24Password })
+                    });
+                    if (!res.ok) {
+                      const err = await res.json();
+                      throw new Error(err.error || 'Failed to connect AutoScout24');
+                    }
+                    setAS24({ client_id: as24Username });
+                    setAs24Username('');
+                    setAs24Password('');
+                    setShowAS24Popup(false);
+                  } catch (e: any) {
+                    setError(e.message || 'Failed to connect AutoScout24');
+                  }
+                }}
+              >
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Username</label>
+                  <input
+                    type="text"
+                    value={as24Username}
+                    onChange={(e) => setAs24Username(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring focus:ring-yellow-200 focus:ring-opacity-50"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Password</label>
+                  <input
+                    type="password"
+                    value={as24Password}
+                    onChange={(e) => setAs24Password(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring focus:ring-yellow-200 focus:ring-opacity-50"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAS24Popup(false)}
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium py-2 px-4 rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded"
+                  >
+                    Connect
+                  </button>
+                </div>
+              </form>
+              <p className="text-xs text-gray-500 mt-3">
+                You can find your credentials in the AutoScout24 partner portal. See API docs at
+                <a className="text-blue-600 ml-1" href="https://listing-creation.api.autoscout24.com/assets/swagger/spec/index.html#/" target="_blank" rel="noreferrer">Swagger</a>.
+              </p>
             </div>
           </div>
         )}

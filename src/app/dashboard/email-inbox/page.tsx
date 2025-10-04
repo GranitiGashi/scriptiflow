@@ -70,7 +70,7 @@ export default function EmailInboxPage() {
                 </Box>
                 <Divider />
                 <Box sx={{ p: 2, flex: 1, overflow: 'auto' }}>
-                  <Box sx={{ fontSize: 14 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(active.body || active.snippet || '') }} />
+                  <Box sx={{ fontSize: 14 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((active.body || '').replace(/<pre[\s\S]*?<\/pre>/gi, '')) }} />
                 </Box>
                 <Divider />
                 <Box sx={{ p: 1.5, display: 'flex', gap: 1 }}>
