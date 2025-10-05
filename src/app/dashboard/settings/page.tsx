@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Elements } from '@stripe/react-stripe-js';
+import { stripePromise } from '@/lib/stripe';
+import SaveCardForm from '@/components/SaveCardForm';
 import DashboardLayout from "@/components/DashboardLayout";
 import authManager from "@/lib/auth";
 
@@ -8,6 +11,8 @@ export default function SettingsPage() {
   const base = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
   const [tab, setTab] = useState<'profile' | 'integrations' | 'exports' | 'branding' | 'plan' | 'billing'>('profile');
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [cards, setCards] = useState<{ id: string; brand: string; last4: string; exp_month: number; exp_year: number }[]>([]);
+  const [defaultPmId, setDefaultPmId] = useState<string | null>(null);
   const [logo, setLogo] = useState<File | null>(null);
   const [bg, setBg] = useState<File | null>(null);
   const [assets, setAssets] = useState<any>({});
@@ -85,6 +90,14 @@ export default function SettingsPage() {
       if (r.ok) {
         const data = await r.json();
         setInvoices(data.invoices || []);
+      }
+    } catch {}
+    try {
+      const r = await authManager.authenticatedFetch(`${base}/api/billing/payment-methods`, { headers: { Accept: 'application/json' } });
+      if (r.ok) {
+        const data = await r.json();
+        setCards(data.cards || []);
+        setDefaultPmId(data.default_payment_method_id || null);
       }
     } catch {}
   }
@@ -418,50 +431,119 @@ export default function SettingsPage() {
 
         {tab === 'billing' && (
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <h2 className="text-lg font-semibold">Billing history</h2>
-            <p className="text-sm text-gray-600 mt-1">Your recent invoices and payment status.</p>
+            <h2 className="text-lg font-semibold">Billing</h2>
+            <p className="text-sm text-gray-600 mt-1">Manage your payment methods and view invoice history.</p>
 
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-600 border-b">
-                    <th className="py-2 pr-4">Date</th>
-                    <th className="py-2 pr-4">Invoice</th>
-                    <th className="py-2 pr-4">Status</th>
-                    <th className="py-2 pr-4 text-right">Amount</th>
-                    <th className="py-2 pr-4">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoices.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="py-6 text-center text-gray-500">No invoices yet</td>
-                    </tr>
-                  )}
-                  {invoices.map((inv) => (
-                    <tr key={inv.id} className="border-b">
-                      <td className="py-2 pr-4">{inv.created ? new Date(inv.created).toLocaleDateString() : '-'}</td>
-                      <td className="py-2 pr-4">{inv.number || inv.id}</td>
-                      <td className="py-2 pr-4">
-                        <span className={`inline-flex px-2 py-0.5 rounded text-xs ${inv.status==='paid' || inv.paid ? 'bg-green-100 text-green-700' : inv.status==='open' ? 'bg-yellow-100 text-yellow-800' : inv.status==='uncollectible' || inv.status==='void' ? 'bg-gray-100 text-gray-700' : inv.status==='draft' ? 'bg-gray-100 text-gray-700' : 'bg-red-100 text-red-700'}`}>
-                          {inv.status || (inv.paid ? 'paid' : 'unpaid')}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-4 text-right">€{(inv.total/100).toFixed(2)}</td>
-                      <td className="py-2 pr-4">
-                        <div className="flex gap-2">
-                          {inv.hosted_invoice_url && (
-                            <a href={inv.hosted_invoice_url} target="_blank" className="text-blue-600 hover:underline">View</a>
-                          )}
-                          {inv.invoice_pdf && (
-                            <a href={inv.invoice_pdf} target="_blank" className="text-blue-600 hover:underline">PDF</a>
-                          )}
+            <div className="mt-6">
+              <h3 className="font-medium mb-2">Saved cards</h3>
+              <div className="border rounded">
+                {cards.length === 0 ? (
+                  <div className="p-4 text-sm text-gray-500">No saved cards. Add one below.</div>
+                ) : (
+                  <ul className="divide-y">
+                    {cards.map((c) => (
+                      <li key={c.id} className="p-3 flex items-center justify-between">
+                        <div className="text-sm">
+                          <div className="font-medium">{(c.brand || '').toUpperCase()} •••• {c.last4}</div>
+                          <div className="text-gray-500">Exp {String(c.exp_month).padStart(2,'0')}/{String(c.exp_year).slice(-2)}</div>
                         </div>
-                      </td>
+                        <div className="flex items-center gap-2">
+                          {defaultPmId === c.id && (
+                            <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700">Default</span>
+                          )}
+                          <button
+                            className="px-2 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
+                            onClick={async ()=>{
+                              try {
+                                const r = await authManager.authenticatedFetch(`${base}/api/payment-method`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ payment_method_id: c.id })
+                                });
+                                if (r.ok) setDefaultPmId(c.id);
+                              } catch {}
+                            }}
+                          >Make default</button>
+                          <button
+                            className="px-2 py-1 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100"
+                            onClick={async ()=>{
+                              if (!confirm('Delete this card?')) return;
+                              try {
+                                const r = await authManager.authenticatedFetch(`${base}/api/billing/payment-methods/${encodeURIComponent(c.id)}`, { method: 'DELETE' });
+                                if (r.ok) {
+                                  setCards(prev => prev.filter(x => x.id !== c.id));
+                                  if (defaultPmId === c.id) setDefaultPmId(null);
+                                }
+                              } catch {}
+                            }}
+                          >Delete</button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="mt-4">
+                <Elements stripe={stripePromise}>
+                  <SaveCardForm onSuccess={async()=>{
+                    try {
+                      const r = await authManager.authenticatedFetch(`${base}/api/billing/payment-methods`, { headers: { Accept: 'application/json' } });
+                      if (r.ok) {
+                        const data = await r.json();
+                        setCards(data.cards || []);
+                        setDefaultPmId(data.default_payment_method_id || null);
+                      }
+                    } catch {}
+                  }} />
+                </Elements>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <h3 className="font-medium mb-2">Invoice history</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-600 border-b">
+                      <th className="py-2 pr-4">Date</th>
+                      <th className="py-2 pr-4">Invoice</th>
+                      <th className="py-2 pr-4">Status</th>
+                      <th className="py-2 pr-4 text-right">Amount</th>
+                      <th className="py-2 pr-4">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {invoices.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-6 text-center text-gray-500">No invoices yet</td>
+                      </tr>
+                    )}
+                    {invoices.map((inv) => (
+                      <tr key={inv.id} className="border-b">
+                        <td className="py-2 pr-4">{inv.created ? new Date(inv.created).toLocaleDateString() : '-'}</td>
+                        <td className="py-2 pr-4">{inv.number || inv.id}</td>
+                        <td className="py-2 pr-4">
+                          <span className={`inline-flex px-2 py-0.5 rounded text-xs ${inv.status==='paid' || inv.paid ? 'bg-green-100 text-green-700' : inv.status==='open' ? 'bg-yellow-100 text-yellow-800' : inv.status==='uncollectible' || inv.status==='void' ? 'bg-gray-100 text-gray-700' : inv.status==='draft' ? 'bg-gray-100 text-gray-700' : 'bg-red-100 text-red-700'}`}>
+                            {inv.status || (inv.paid ? 'paid' : 'unpaid')}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-4 text-right">€{(inv.total/100).toFixed(2)}</td>
+                        <td className="py-2 pr-4">
+                          <div className="flex gap-2">
+                            {inv.hosted_invoice_url && (
+                              <a href={inv.hosted_invoice_url} target="_blank" className="text-blue-600 hover:underline">View</a>
+                            )}
+                            {inv.invoice_pdf && (
+                              <a href={inv.invoice_pdf} target="_blank" className="text-blue-600 hover:underline">PDF</a>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

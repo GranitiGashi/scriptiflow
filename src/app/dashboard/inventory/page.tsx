@@ -31,12 +31,14 @@ export default function InventoryPage() {
   const allowed = hasTierOrAbove('pro');
   const tier = getUserTier();
   const [cars, setCars] = useState<Car[]>([]);
+  const [filtered, setFiltered] = useState<Car[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mobileDeConnected, setMobileDeConnected] = useState(false);
   const [as24Connected, setAs24Connected] = useState(false);
   const router = useRouter();
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
+  const [search, setSearch] = useState<{ make?: string; model?: string; q?: string }>({});
 
   // Check if mobile.de account is connected
   useEffect(() => {
@@ -210,6 +212,36 @@ export default function InventoryPage() {
     fetchCars();
   }, [mobileDeConnected, baseDomain, allowed]);
 
+  // Parse query params once
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const make = params.get('make') || '';
+      const model = params.get('model') || '';
+      const q = params.get('q') || '';
+      setSearch({ make, model, q });
+    } catch {}
+  }, []);
+
+  // Apply filters client-side
+  useEffect(() => {
+    const make = (search.make || '').trim().toLowerCase();
+    const model = (search.model || '').trim().toLowerCase();
+    const q = (search.q || '').trim().toLowerCase();
+    let next = cars;
+    if (make) next = next.filter(c => (c.make || '').toLowerCase().includes(make));
+    if (model) next = next.filter(c => (c.model || '').toLowerCase().includes(model));
+    if (q) {
+      next = next.filter(c => (
+        (c.modelDescription || '').toLowerCase().includes(q) ||
+        (c.price || '').toLowerCase().includes(q) ||
+        (c.fuel || '').toLowerCase().includes(q) ||
+        (c.power || '').toLowerCase().includes(q)
+      ));
+    }
+    setFiltered(next);
+  }, [cars, search]);
+
   const handleBoostPost = (car: Car) => {
     try {
       if (typeof window !== 'undefined') {
@@ -256,15 +288,15 @@ export default function InventoryPage() {
           </div>
         )}
 
-        {!loading && cars.length === 0 && !error && (
+        {!loading && filtered.length === 0 && !error && (
           <div className="text-center text-gray-600">
             No cars found in your inventory.
           </div>
         )}
 
-        {!loading && cars.length > 0 && (
+        {!loading && filtered.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {cars.map((car) => (
+            {filtered.map((car) => (
               <div
                 key={car.id}
                 className="rounded-xl shadow-lg p-6 bg-white transition-all duration-300 transform hover:scale-105"
