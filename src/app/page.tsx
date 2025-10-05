@@ -380,7 +380,7 @@ export default function Home() {
                 </ul>
                 
                 <Button 
-                  onClick={() => plan.cta === 'Contact Sales' ? setShowDemoForm(true) : window.location.assign(`/pricing?plan=${plan.key}`)} 
+                  onClick={() => plan.cta === 'Contact Sales' ? setShowDemoForm(true) : window.location.assign(`/pricing/payment?plan=${plan.key}`)} 
                   className={`w-full py-3 rounded-xl font-semibold ${
                     plan.popular 
                       ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white' 

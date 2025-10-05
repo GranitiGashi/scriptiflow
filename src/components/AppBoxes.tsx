@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaExternalLinkAlt, FaLock } from 'react-icons/fa';
 import authManager from '@/lib/auth';
-
+import Link from 'next/link';
 type UserApp = {
   id: string;
   name: string;
@@ -107,7 +107,7 @@ export default function AppBoxes() {
         {apps.length === 0 ? (
           <div className="col-span-full text-center py-8 text-gray-500">
             <FaPlus className="text-4xl mx-auto mb-4 opacity-50" />
-            <p>No apps yet. Click "Add App" to get started!</p>
+            <p>No apps yet. <Link href="/support" className="text-blue-500 underline">Contact support to add apps.</Link></p>
           </div>
         ) : (
           apps.map((app) => (

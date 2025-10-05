@@ -6,7 +6,8 @@ import authManager from "@/lib/auth";
 
 export default function SettingsPage() {
   const base = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
-  const [tab, setTab] = useState<'profile' | 'integrations' | 'exports' | 'branding' | 'plan'>('profile');
+  const [tab, setTab] = useState<'profile' | 'integrations' | 'exports' | 'branding' | 'plan' | 'billing'>('profile');
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [logo, setLogo] = useState<File | null>(null);
   const [bg, setBg] = useState<File | null>(null);
   const [assets, setAssets] = useState<any>({});
@@ -79,6 +80,13 @@ export default function SettingsPage() {
       } catch {}
       setIntStatus(next);
     } catch {}
+    try {
+      const r = await authManager.authenticatedFetch(`${base}/api/billing/invoices`, { headers: { Accept: 'application/json' } });
+      if (r.ok) {
+        const data = await r.json();
+        setInvoices(data.invoices || []);
+      }
+    } catch {}
   }
 
   async function saveBranding() {
@@ -137,6 +145,7 @@ export default function SettingsPage() {
             <button onClick={() => setTab('exports')} className={`px-3 py-2 rounded ${tab==='exports'?'bg-black text-white':'bg-gray-100 text-gray-800'}`}>Data exports</button>
             <button onClick={() => setTab('branding')} className={`px-3 py-2 rounded ${tab==='branding'?'bg-black text-white':'bg-gray-100 text-gray-800'}`}>Branding</button>
             <button onClick={() => setTab('plan')} className={`px-3 py-2 rounded ${tab==='plan'?'bg-black text-white':'bg-gray-100 text-gray-800'}`}>Plan / Tier</button>
+            <button onClick={() => setTab('billing')} className={`px-3 py-2 rounded ${tab==='billing'?'bg-black text-white':'bg-gray-100 text-gray-800'}`}>Billing</button>
           </div>
         </div>
 
@@ -403,6 +412,56 @@ export default function SettingsPage() {
                   <button className="mt-3 px-3 py-1.5 bg-black text-white rounded">{p.cta}</button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {tab === 'billing' && (
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h2 className="text-lg font-semibold">Billing history</h2>
+            <p className="text-sm text-gray-600 mt-1">Your recent invoices and payment status.</p>
+
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-600 border-b">
+                    <th className="py-2 pr-4">Date</th>
+                    <th className="py-2 pr-4">Invoice</th>
+                    <th className="py-2 pr-4">Status</th>
+                    <th className="py-2 pr-4 text-right">Amount</th>
+                    <th className="py-2 pr-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-6 text-center text-gray-500">No invoices yet</td>
+                    </tr>
+                  )}
+                  {invoices.map((inv) => (
+                    <tr key={inv.id} className="border-b">
+                      <td className="py-2 pr-4">{inv.created ? new Date(inv.created).toLocaleDateString() : '-'}</td>
+                      <td className="py-2 pr-4">{inv.number || inv.id}</td>
+                      <td className="py-2 pr-4">
+                        <span className={`inline-flex px-2 py-0.5 rounded text-xs ${inv.status==='paid' || inv.paid ? 'bg-green-100 text-green-700' : inv.status==='open' ? 'bg-yellow-100 text-yellow-800' : inv.status==='uncollectible' || inv.status==='void' ? 'bg-gray-100 text-gray-700' : inv.status==='draft' ? 'bg-gray-100 text-gray-700' : 'bg-red-100 text-red-700'}`}>
+                          {inv.status || (inv.paid ? 'paid' : 'unpaid')}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-4 text-right">€{(inv.total/100).toFixed(2)}</td>
+                      <td className="py-2 pr-4">
+                        <div className="flex gap-2">
+                          {inv.hosted_invoice_url && (
+                            <a href={inv.hosted_invoice_url} target="_blank" className="text-blue-600 hover:underline">View</a>
+                          )}
+                          {inv.invoice_pdf && (
+                            <a href={inv.invoice_pdf} target="_blank" className="text-blue-600 hover:underline">PDF</a>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
