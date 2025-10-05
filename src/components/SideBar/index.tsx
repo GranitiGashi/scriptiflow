@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { getUserTier, hasTierOrAbove } from "@/lib/permissions";
+import { getUserTier } from "@/lib/permissions";
 import authManager from '@/lib/auth';
 
 interface NavItem {
@@ -11,6 +11,7 @@ interface NavItem {
   path: string;
   icon: string;
   external?: boolean;
+  disabled?: boolean;
 }
 
 interface SidebarProps {
@@ -61,18 +62,28 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     client: (
       () => {
         const items: NavItem[] = [];
-        // basic and above: integrations + autopost + inventory
+        const tier = getUserTier();
+        const isPro = tier === 'pro' || tier === 'premium';
+        const isPremium = tier === 'premium';
+        // Visible to all tiers
         items.push({ name: "Integrations", path: "/dashboard/social-media", icon: "fab fa-facebook" });
         items.push({ name: "Autopost", path: "/dashboard/social-media/autopost", icon: "fas fa-bolt" });
         items.push({ name: "My Inventory", path: "/dashboard/inventory", icon: "fab fa-facebook"});
-        items.push({ name: "Contacts", path: "/dashboard/contacts", icon: "fas fa-address-book"});
-        items.push({ name: "Inbox", path: "/dashboard/inbox", icon: "fas fa-inbox"});
-        items.push({ name: "Email Inbox", path: "/dashboard/email-inbox", icon: "fas fa-envelope"});
-        items.push({ name: "Calendar", path: "/dashboard/calendar", icon: "fas fa-calendar"});
-        items.push({ name: "Background Remover", path: "/dashboard/background-remover", icon: "fas fa-cut"});
-        items.push({ name: "Credits", path: "/dashboard/credits", icon: "fas fa-coins"});
+        // Contacts (CRM): pro+
+        if (isPro) items.push({ name: "Contacts", path: "/dashboard/contacts", icon: "fas fa-address-book"});
+        // WhatsApp inbox: premium only
+        if (isPremium) items.push({ name: "Inbox", path: "/dashboard/inbox", icon: "fas fa-inbox"});
+        // Email Inbox: pro+
+        if (isPro) items.push({ name: "Email Inbox", path: "/dashboard/email-inbox", icon: "fas fa-envelope"});
+        // Calendar: pro+
+        if (isPro) items.push({ name: "Calendar", path: "/dashboard/calendar", icon: "fas fa-calendar"});
+        
+        // Settings
         items.push({ name: "Settings", path: "/dashboard/settings", icon: "fas fa-cog"});
-        // premium only pages reserved (none yet)
+        // Background Remover: always shown at the end; locked for < premium
+        items.push({ name: isPremium ? "Background Remover" : "Background Remover (Locked)", path: "/dashboard/background-remover", icon: "fas fa-cut", disabled: !isPremium });
+        // Credits (kept for all tiers)
+        if (isPremium) items.push({ name: "Credits", path: "/dashboard/credits", icon: "fas fa-coins"});
         return items;
       }
     )(),
@@ -124,9 +135,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={onClose}
-                  className={`flex items-center hover:text-gray-300 ${
-                    pathname === item.path ? "text-blue-400" : "text-gray-200"
-                  }`}
+                  className={`flex items-center hover:text-gray-300 ${pathname === item.path ? "text-blue-400" : "text-gray-200"} ${item.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   <i className={`${item.icon} mr-3 text-lg`} />
                   {item.name}
@@ -134,10 +143,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               ) : (
                 <Link
                   href={item.path}
-                  onClick={onClose}
-                  className={`flex items-center hover:text-gray-300 ${
-                    pathname === item.path ? "text-blue-400" : "text-gray-200"
-                  }`}
+                  onClick={(e) => {
+                    if (item.disabled) {
+                      e.preventDefault();
+                      router.push('/pricing');
+                      return;
+                    }
+                    onClose();
+                  }}
+                  className={`flex items-center hover:text-gray-300 ${pathname === item.path ? "text-blue-400" : "text-gray-200"} ${item.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   <i className={`${item.icon} mr-3 text-lg`} />
                   {item.name}

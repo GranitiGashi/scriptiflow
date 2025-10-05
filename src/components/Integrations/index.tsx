@@ -473,169 +473,188 @@ export default function ConnectPage() {
           </div>
         )}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="rounded-xl shadow-sm p-6 bg-gray-100 animate-pulse">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gray-300 rounded-full"></div>
-                  <div className="flex-1">
-                    <div className="h-6 bg-gray-300 rounded w-3/4 mb-2"></div>
-                    <div className="h-4 bg-gray-300 rounded w-full"></div>
-                  </div>
-                </div>
-                <div className="mt-6 h-10 bg-gray-300 rounded w-1/2"></div>
-              </div>
+          <div className="max-w-6xl mx-auto space-y-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="rounded-xl shadow-sm p-6 bg-gray-100 animate-pulse h-40" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {integrations.map((integration) => {
-              const tier = getUserTier();
-              const isStripe = integration.name === 'Stripe';
-              const isEmail = (integration as any).type === 'email';
-              const locked = (isStripe && tier === 'basic') || (isEmail && tier === 'basic');
-              return (
-              <div
-                key={integration.name}
-                className={`rounded-xl shadow-lg p-6 ${integration.bg} transition-all duration-300 transform hover:scale-105 ${locked ? 'opacity-70' : ''}`}
-              >
-                <div className="flex items-center space-x-4 mb-4">
-                  {integration.profilePicture && integration.connected ? (
-                    <img
-                      src={integration.profilePicture}
-                      alt={`${integration.name} Profile`}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-                    />
-                  ) : (
-                    integration.icon
-                  )}
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-800">{integration.name}</h2>
-                    <p className="text-sm text-gray-600">{integration.description}</p>
-                    {locked && (
-                      <div className="mt-2 inline-flex items-center text-xs text-purple-800 bg-purple-100 border border-purple-200 px-2 py-1 rounded">
-                        <FaLock className="mr-1" /> {(integration as any).type === 'email' ? 'Email integrations' : 'Stripe'} sind im Basic-Paket gesperrt. Bitte upgraden.
-                      </div>
-                    )}
-                    {integration.connected && integration.nameOrUsername && (
-                      <p className="text-sm font-medium text-gray-700 mt-1">
-                        Connected as: {integration.nameOrUsername}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                {integration.connected ? (
-                  <div className="flex space-x-2">
-                    <span className="flex-1 bg-green-500 text-white text-sm font-medium py-2 px-4 rounded text-center">
-                      Connected
-                    </span>
-                    {integration.name === 'Stripe' ? (
-                      <>
-                        <button
-                          onClick={() => !locked && router.push('/dashboard/payments/save-card')}
-                          className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium py-2 px-4 rounded transition"
-                          disabled={locked}
-                        >
-                          Manage
-                        </button>
-                        <button
-                          onClick={async () => {
-                            try {
-                              const res = await authManager.authenticatedFetch(`${baseDomain}/api/payment-method`, {
-                                method: 'DELETE',
-                                headers: { 'Accept': 'application/json' },
-                              });
-                              if (res.ok) {
-                                setStripe({ connected: false, cardBrand: null, last4: null });
-                              } else {
-                                const errData = await res.json();
-                                alert(errData.error || 'Failed to disconnect Stripe');
-                              }
-                            } catch (e) {
-                              console.error('❌ Failed to disconnect Stripe', e);
-                              alert('Failed to disconnect Stripe');
-                            }
-                          }}
-                          className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 px-4 rounded transition"
-                        >
-                          Disconnect
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() =>
-                          integration.name === 'mobile.de'
-                            ? handleMobileDeDisconnect()
-                            : integration.name === 'AutoScout24'
-                            ? (async () => {
-                                try {
-                                  const res = await authManager.authenticatedFetch(`${baseDomain}/api/autoscout24/connect`, { method: 'DELETE' });
-                                  if (res.ok) setAS24({ client_id: null });
-                                } catch {}
-                              })()
-                            : integration.name === 'WhatsApp'
-                            ? (async () => {
-                                try {
-                                  const res = await authManager.authenticatedFetch(`${baseDomain}/api/whatsapp/credentials`, { method: 'DELETE' });
-                                  if (res.ok) setWa({ connected: false, phoneNumberId: null });
-                                } catch {}
-                              })()
-                            : (async () => {
-                                const provider = (integration as any).provider;
-                                if (!provider) { alert(`Disconnect ${integration.name} not implemented yet`); return; }
-                                try {
-                                  const res = await authManager.authenticatedFetch(`${baseDomain}/api/email/disconnect?provider=${encodeURIComponent(provider)}`, { method: 'DELETE' });
-                                  if (res.ok) {
-                                    setEmailStatus((s) => ({
-                                      gmail: provider === 'gmail' ? { connected: false } : s.gmail,
-                                      outlook: provider === 'outlook' ? { connected: false } : s.outlook,
-                                    }));
-                                  }
-                                } catch {}
-                              })()
-                        }
-                        className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 px-4 rounded transition"
-                      >
-                        Disconnect
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    onClick={() =>
-                      integration.name === 'mobile.de'
-                        ? setShowMobileDePopup(true)
-                        : integration.name === 'AutoScout24'
-                        ? setShowAS24Popup(true)
-                        : integration.name === 'WhatsApp'
-                        ? setWaOpen(true)
-                        : (!locked ? (async () => {
-                            const anyInt = integration as any;
-                            if (anyInt.provider === 'gmail') {
-                              const res = await authManager.authenticatedFetch(`${baseDomain}/api/email/gmail/login-url`);
-                              const data = await res.json();
-                              if (data?.auth_url) window.location.href = data.auth_url;
-                            } else if (anyInt.provider === 'outlook') {
-                              const res = await authManager.authenticatedFetch(`${baseDomain}/api/email/outlook/login-url`);
-                              const data = await res.json();
-                              if (data?.auth_url) window.location.href = data.auth_url;
-                            } else if (integration.href) {
-                              window.location.href = integration.href;
-                            }
-                          })() : undefined)
-                    }
-                    className={`block text-center ${
-                      (!locked)
-                        ? 'bg-black hover:bg-opacity-80'
-                        : 'bg-gray-400 cursor-not-allowed'
-                      } text-white text-sm font-medium py-2 px-4 rounded transition`}
-                    disabled={locked}
-                  >
-                    Connect
-                  </button>
-                )}
+          <div className="max-w-6xl mx-auto space-y-10">
+            {/* Inventory */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-gray-800">Inventory</h2>
               </div>
-            );})}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[
+                  { key: 'mobilede', name: 'mobile.de', connected: !!mobileDe?.username, locked: false, icon: <FaCar className="text-green-600 text-3xl" /> },
+                  { key: 'autoscout24', name: 'AutoScout24', connected: !!as24?.client_id, locked: false, icon: <FaCar className="text-yellow-600 text-3xl" /> },
+                ]
+                  .sort((a,b)=> (a.connected===b.connected?0:(a.connected?1:-1)))
+                  .map(item => (
+                    <div key={item.key} className="rounded-xl border p-5 bg-white">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {item.icon}
+                          <div className="font-medium text-gray-800">{item.name}</div>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded ${item.connected? 'bg-green-100 text-green-700':'bg-gray-100 text-gray-700'}`}>{item.connected? 'Connected':'Not connected'}</span>
+                      </div>
+                      <div className="mt-4">
+                        {!item.connected ? (
+                          <button
+                            className="px-3 py-1.5 bg-black text-white rounded"
+                            onClick={() => item.key==='mobilede' ? setShowMobileDePopup(true) : setShowAS24Popup(true)}
+                          >Connect</button>
+                        ) : (
+                          <button
+                            className="px-3 py-1.5 bg-gray-200 text-gray-800 rounded"
+                            onClick={async()=>{
+                              try {
+                                if (item.key==='mobilede') {
+                                  const r = await authManager.authenticatedFetch(`${baseDomain}/api/connect-mobile-de`, { method: 'DELETE' });
+                                  if (r.ok) setMobileDe({ username: null, dealership_name: null, logo_url: null });
+                                } else {
+                                  const r = await authManager.authenticatedFetch(`${baseDomain}/api/autoscout24/connect`, { method: 'DELETE' });
+                                  if (r.ok) setAS24({ client_id: null });
+                                }
+                              } catch {}
+                            }}
+                          >Disconnect</button>
+                        )}
+                      </div>
+                    </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Social */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-gray-800">Social</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[
+                  { key: 'facebook', name: 'Facebook', connected: !!accounts?.facebook_id, icon: <FaFacebook className="text-blue-600 text-3xl" /> },
+                  { key: 'instagram', name: 'Instagram', connected: !!accounts?.instagram_id, icon: <FaInstagram className="text-pink-500 text-3xl" /> },
+                ]
+                  .sort((a,b)=> (a.connected===b.connected?0:(a.connected?1:-1)))
+                  .map(item => (
+                    <div key={item.key} className="rounded-xl border p-5 bg-white">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {item.icon}
+                          <div className="font-medium text-gray-800">{item.name}</div>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded ${item.connected? 'bg-green-100 text-green-700':'bg-gray-100 text-gray-700'}`}>{item.connected? 'Connected':'Not connected'}</span>
+                      </div>
+                      <div className="mt-4">
+                        {!item.connected ? (
+                          <button
+                            className="px-3 py-1.5 bg-black text-white rounded"
+                            onClick={async()=>{ try { const r = await authManager.authenticatedFetch(`${baseDomain}/api/fb/login-url`); const d = await r.json(); if (d?.auth_url) window.location.href = d.auth_url; } catch {} }}
+                          >Connect</button>
+                        ) : (
+                          <button className="px-3 py-1.5 bg-gray-200 text-gray-800 rounded" onClick={()=>alert('Disconnect via Facebook Business settings.')}>Disconnect</button>
+                        )}
+                      </div>
+                    </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Messaging & Email */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-gray-800">Messaging & Email</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {(() => {
+                  const tier = getUserTier();
+                  const isBasic = tier === 'basic';
+                  const isPremium = tier === 'premium';
+                  const items = [
+                    { key: 'whatsapp', name: 'WhatsApp', connected: wa.connected, locked: !isPremium, icon: <SiWhatsapp className="text-green-600 text-3xl" /> },
+                    { key: 'gmail', name: 'Gmail', connected: !!emailStatus.gmail.connected, locked: isBasic, icon: <FaGoogle className="text-red-600 text-3xl" /> },
+                    { key: 'outlook', name: 'Outlook', connected: !!emailStatus.outlook.connected, locked: isBasic, icon: <FaMicrosoft className="text-blue-700 text-3xl" /> },
+                  ];
+                  return items
+                    .sort((a,b)=> (a.locked===b.locked? (a.connected===b.connected?0:(a.connected?1:-1)) : (a.locked?1:-1)))
+                    .map(item => (
+                      <div key={item.key} className={`rounded-xl border p-5 bg-white ${item.locked? 'opacity-60':''}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {item.icon}
+                            <div className="font-medium text-gray-800">{item.name}</div>
+                          </div>
+                          <span className={`text-xs px-2 py-0.5 rounded ${item.connected? 'bg-green-100 text-green-700':'bg-gray-100 text-gray-700'}`}>{item.connected? 'Connected':'Not connected'}</span>
+                        </div>
+                        <div className="mt-2 text-xs text-gray-600 min-h-[1rem]">
+                          {item.locked && (item.key==='whatsapp' ? 'Premium required' : 'Pro required')}
+                        </div>
+                        <div className="mt-2">
+                          {!item.connected ? (
+                            <button
+                              disabled={item.locked}
+                              className={`px-3 py-1.5 rounded ${item.locked? 'bg-gray-300 text-gray-600 cursor-not-allowed':'bg-black text-white'}`}
+                              onClick={async()=>{
+                                try {
+                                  if (item.key==='whatsapp') setWaOpen(true);
+                                  else if (item.key==='gmail') { const r = await authManager.authenticatedFetch(`${baseDomain}/api/email/gmail/login-url`); const d = await r.json(); if (d?.auth_url) window.location.href = d.auth_url; }
+                                  else if (item.key==='outlook') { const r = await authManager.authenticatedFetch(`${baseDomain}/api/email/outlook/login-url`); const d = await r.json(); if (d?.auth_url) window.location.href = d.auth_url; }
+                                } catch {}
+                              }}
+                            >Connect</button>
+                          ) : (
+                            <button
+                              className="px-3 py-1.5 bg-gray-200 text-gray-800 rounded"
+                              onClick={async()=>{
+                                try {
+                                  if (item.key==='whatsapp') { const r = await authManager.authenticatedFetch(`${baseDomain}/api/whatsapp/credentials`, { method: 'DELETE' }); if (r.ok) setWa({ connected: false, phoneNumberId: null }); }
+                                  else { const r = await authManager.authenticatedFetch(`${baseDomain}/api/email/disconnect?provider=${encodeURIComponent(item.key)}`, { method: 'DELETE' }); if (r.ok) setEmailStatus(s=>({ gmail: item.key==='gmail'? { connected: false } : s.gmail, outlook: item.key==='outlook'? { connected: false } : s.outlook })); }
+                                } catch {}
+                              }}
+                            >Disconnect</button>
+                          )}
+                        </div>
+                      </div>
+                  ));
+                })()}
+              </div>
+            </section>
+
+            {/* Payments */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-gray-800">Payments</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {(() => {
+                  const tier = getUserTier();
+                  const isBasic = tier === 'basic';
+                  const item = { key: 'stripe', name: 'Stripe', connected: stripe.connected, locked: isBasic, icon: <FaStripe className="text-purple-600 text-3xl" /> };
+                  return (
+                    <div className={`rounded-xl border p-5 bg-white ${item.locked? 'opacity-60':''}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {item.icon}
+                          <div className="font-medium text-gray-800">{item.name}</div>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded ${item.connected? 'bg-green-100 text-green-700':'bg-gray-100 text-gray-700'}`}>{item.connected? 'Connected':'Not connected'}</span>
+                      </div>
+                      <div className="mt-2 text-xs text-gray-600 min-h-[1rem]">{item.locked && 'Pro required'}</div>
+                      <div className="mt-2">
+                        {!item.connected ? (
+                          <button disabled={item.locked} className={`px-3 py-1.5 rounded ${item.locked? 'bg-gray-300 text-gray-600 cursor-not-allowed':'bg-black text-white'}`} onClick={()=> !item.locked && router.push('/dashboard/payments/save-card')}>Connect</button>
+                        ) : (
+                          <button className="px-3 py-1.5 bg-gray-200 text-gray-800 rounded" onClick={async()=>{ try { const r = await authManager.authenticatedFetch(`${baseDomain}/api/payment-method`, { method: 'DELETE', headers: { 'Accept': 'application/json' } }); if (r.ok) setStripe({ connected: false, cardBrand: null, last4: null }); } catch {} }}>Disconnect</button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </section>
           </div>
         )}
         {showMobileDePopup && (

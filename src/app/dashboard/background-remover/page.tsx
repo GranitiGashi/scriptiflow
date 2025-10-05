@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { hasTierOrAbove } from "@/lib/permissions";
+import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import authManager from "@/lib/auth";
 
@@ -175,6 +177,20 @@ export default function BackgroundRemoverPage() {
       } catch {}
     })();
   }, []);
+
+  // Client-side guard: Premium only
+  const allowed = hasTierOrAbove('premium');
+  if (!allowed) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded">
+            This feature is available on the Premium plan. <Link href="/pricing" className="underline text-yellow-900 hover:text-yellow-800">View pricing</Link>.
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

@@ -8,16 +8,17 @@ const Integrations = dynamic(() => import('@/components/Integrations'), { ssr: f
 
 export default function Page() {
   const tier = getUserTier();
-  const lockedStripeBanner = (
+  const lockedFeaturesBanner = (
     <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded">
-      Stripe ist im Basic-Paket gesperrt. Bitte upgraden, um Zugriff zu erhalten.
+      To access all features, please upgrade your package.{' '}
+      <a href="/pricing" className="underline text-yellow-900 hover:text-yellow-800">View pricing</a>.
     </div>
   );
 
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto w-full">
-        {tier === 'basic' && lockedStripeBanner}
+        {tier === 'basic' && lockedFeaturesBanner}
         <Integrations />
       </div>
     </DashboardLayout>

@@ -1,14 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 
 type Plan = 'basic' | 'pro' | 'premium';
 
-const PLANS: { key: Plan; name: string; price: string; features: string[] }[] = [
-  { key: 'basic', name: 'Basic', price: '99€ / Monat', features: ['Integrationen', 'Autoposting (Basis)', 'Support per E‑Mail'] },
-  { key: 'pro', name: 'Pro', price: '149€ / Monat', features: ['Alles aus Basic', 'Stripe-Zahlungen', 'My Inventory + Boost'] },
-  { key: 'premium', name: 'Premium', price: '299€ / Monat', features: ['Alles aus Pro', 'Priorisierter Support', 'Erweiterte Limits'] },
+const PLANS: { key: Plan; name: string; price: string }[] = [
+  { key: 'basic', name: 'Basic', price: '99€ / Monat' },
+  { key: 'pro', name: 'Pro', price: '149€ / Monat' },
+  { key: 'premium', name: 'Premium', price: '299€ / Monat' },
+];
+
+const FEATURES: { label: string; basic: string; pro: string; premium: string }[] = [
+  { label: 'Inventory import & listing sync', basic: '✅', pro: '✅ + Boost', premium: '✅' },
+  { label: 'Boost Ads (campaigns)', basic: '❌', pro: '✅', premium: '✅' },
+  { label: 'Social auto-post (FB/IG)', basic: '✅', pro: '✅', premium: '✅' },
+  { label: 'WhatsApp integration', basic: '❌', pro: '❌', premium: '✅' },
+  { label: 'Email leads (Gmail/Outlook)', basic: '❌', pro: '✅', premium: '✅' },
+  { label: 'Calendar (events CRUD)', basic: '❌', pro: '✅', premium: '✅' },
+  { label: 'Contacts (CRM)', basic: '❌', pro: '✅', premium: '✅' },
+  { label: 'Payments / Stripe', basic: '❌', pro: '✅', premium: '✅' },
+  { label: 'Branding uploads (Logo)', basic: '✅', pro: '✅', premium: '✅' },
+  { label: 'Plan visibility (Settings)', basic: '✅', pro: '✅', premium: '✅' },
+  { label: 'WhatsApp inbox', basic: '❌', pro: '❌', premium: '✅' },
+  { label: 'Email Inbox', basic: '❌', pro: '✅', premium: '✅' },
+  { label: 'Support', basic: '✅ (Standard)', pro: '✅', premium: '✅ (Priority)' },
+  { label: 'Background remover', basic: '❌', pro: '❌', premium: '✅' },
 ];
 
 export default function PricingPage() {
@@ -19,6 +36,19 @@ export default function PricingPage() {
   const [company, setCompany] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+
+  // Pre-select plan from query param if present
+  React.useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const plan = params.get('plan');
+      if (plan === 'basic' || plan === 'pro' || plan === 'premium') {
+        setOpen(plan);
+        setSelectedPlan(plan);
+      }
+    } catch {}
+  }, []);
 
   async function startCheckout(plan: Plan) {
     setLoading(true);
@@ -27,7 +57,7 @@ export default function PricingPage() {
       const res = await fetch(`${baseDomain}/api/pricing/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, email, full_name: fullName, company_name: company }),
+        body: JSON.stringify({ plan: plan, email, full_name: fullName, company_name: company }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Checkout-Session fehlgeschlagen');
@@ -40,7 +70,6 @@ export default function PricingPage() {
   }
 
   return (
-    <DashboardLayout>
       <div className="min-h-screen bg-gray-50 p-6 sm:p-10">
         <h1 className="text-3xl font-bold text-center mb-8">Preise</h1>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -49,12 +78,17 @@ export default function PricingPage() {
               <h2 className="text-xl font-semibold mb-2">{p.name}</h2>
               <div className="text-2xl font-bold mb-4">{p.price}</div>
               <ul className="text-sm text-gray-700 space-y-2 mb-6">
-                {p.features.map((f) => (
-                  <li key={f}>• {f}</li>
+                {FEATURES.map((f) => (
+                  <li key={f.label} className="flex items-start justify-between">
+                    <span>• {f.label}</span>
+                    <span className="ml-3 text-gray-900 font-medium">
+                      {p.key === 'basic' ? f.basic : p.key === 'pro' ? f.pro : f.premium}
+                    </span>
+                  </li>
                 ))}
               </ul>
               <button
-                onClick={() => setOpen(p.key)}
+                onClick={() => { setOpen(p.key); setSelectedPlan(p.key); }}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2"
               >
                 Plan wählen
@@ -96,7 +130,6 @@ export default function PricingPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }
 

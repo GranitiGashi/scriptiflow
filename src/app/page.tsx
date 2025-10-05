@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import NavigationBar from "@/components/NavigationBar";
 import DemoRequestForm from "@/components/DemoRequestForm";
 import { Button } from "@/components/ui/button";
@@ -306,6 +307,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[
               {
+                key: 'basic' as const,
                 name: 'Starter',
                 price: '€299/mo',
                 description: 'Perfect for small dealerships',
@@ -316,10 +318,11 @@ export default function Home() {
                   'Basic analytics',
                   'Up to 100 cars'
                 ],
-                cta: 'Start Free Trial',
+                cta: 'Choose Plan',
                 popular: false
               },
               {
+                key: 'pro' as const,
                 name: 'Professional',
                 price: '€599/mo',
                 description: 'Most popular for growing dealerships',
@@ -332,10 +335,11 @@ export default function Home() {
                   'Up to 500 cars',
                   'Priority support'
                 ],
-                cta: 'Start Free Trial',
+                cta: 'Choose Plan',
                 popular: true
               },
               {
+                key: 'premium' as const,
                 name: 'Enterprise',
                 price: 'Custom',
                 description: 'For large dealership groups',
@@ -376,7 +380,7 @@ export default function Home() {
                 </ul>
                 
                 <Button 
-                  onClick={() => setShowDemoForm(true)} 
+                  onClick={() => plan.cta === 'Contact Sales' ? setShowDemoForm(true) : window.location.assign(`/pricing?plan=${plan.key}`)} 
                   className={`w-full py-3 rounded-xl font-semibold ${
                     plan.popular 
                       ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white' 
@@ -388,6 +392,7 @@ export default function Home() {
               </div>
             ))}
           </div>
+          {/* Removed modal; redirect to /pricing?plan=... */}
         </div>
       </section>
 
