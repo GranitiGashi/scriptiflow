@@ -39,6 +39,11 @@ export default function InventoryPage() {
   const router = useRouter();
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
   const [search, setSearch] = useState<{ make?: string; model?: string; q?: string }>({});
+  const [searchDraft, setSearchDraft] = useState<{ make: string; model: string; q: string }>({ make: '', model: '', q: '' });
+  const [sort, setSort] = useState<'newest' | 'oldest' | 'makeModelAsc' | 'makeModelDesc'>('newest');
+  const [availableMakes, setAvailableMakes] = useState<string[]>([]);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [isLoadingFilters, setIsLoadingFilters] = useState(false);
 
   // Check if mobile.de account is connected
   useEffect(() => {
@@ -80,7 +85,7 @@ export default function InventoryPage() {
     checkConnection();
   }, [baseDomain, router]);
 
-  // Fetch cars after confirming connection
+  // Fetch cars after confirming connection and whenever search/sort changes
   useEffect(() => {
     if (!mobileDeConnected && !as24Connected) return;
 
@@ -88,9 +93,24 @@ export default function InventoryPage() {
       setLoading(true);
       setError(null);
       try {
-        const url = mobileDeConnected
+        let url = mobileDeConnected
           ? `${baseDomain}/api/get-user-cars`
           : `${baseDomain}/api/autoscout24/remote-listings`;
+
+        // Append server-side query params for mobile.de
+        if (mobileDeConnected) {
+          const params = new URLSearchParams();
+          params.set('page.number', '1');
+          params.set('page.size', '50');
+          if (sort === 'newest') { params.set('sort.field', 'modificationTime'); params.set('sort.order', 'DESCENDING'); }
+          if (sort === 'oldest') { params.set('sort.field', 'modificationTime'); params.set('sort.order', 'ASCENDING'); }
+          if (sort === 'makeModelAsc') { params.set('sort.field', 'makeModel'); params.set('sort.order', 'ASCENDING'); }
+          if (sort === 'makeModelDesc') { params.set('sort.field', 'makeModel'); params.set('sort.order', 'DESCENDING'); }
+          if ((search.make || '').trim()) params.set('make', String(search.make).trim());
+          if ((search.model || '').trim()) params.set('model', String(search.model).trim());
+          if ((search.q || '').trim()) params.set('q', String(search.q).trim());
+          url += `?${params.toString()}`;
+        }
         const res = await authManager.authenticatedFetch(url, {
           headers: {
             Accept: 'application/json',
@@ -202,6 +222,7 @@ export default function InventoryPage() {
         });
 
         setCars(mappedCars);
+        setFiltered(mappedCars);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -210,7 +231,41 @@ export default function InventoryPage() {
     }
 
     fetchCars();
-  }, [mobileDeConnected, baseDomain, allowed]);
+  }, [mobileDeConnected, as24Connected, baseDomain, allowed, search, sort]);
+
+  // Load filter options (makes, and models for selected make) from server cache
+  useEffect(() => {
+    if (!mobileDeConnected) return;
+    let cancelled = false;
+    async function loadFilters() {
+      try {
+        setIsLoadingFilters(true);
+        // Always fetch makes
+        const makeRes = await authManager.authenticatedFetch(`${baseDomain}/api/mobilede/filters`, { headers: { Accept: 'application/json' } });
+        if (makeRes.ok) {
+          const d = await makeRes.json();
+          if (!cancelled) setAvailableMakes(Array.isArray(d?.makes) ? d.makes : []);
+        }
+        // Fetch models if a make is selected
+        const make = (searchDraft.make || search.make || '').trim();
+        if (make) {
+          const modelRes = await authManager.authenticatedFetch(`${baseDomain}/api/mobilede/filters?make=${encodeURIComponent(make)}`, { headers: { Accept: 'application/json' } });
+          if (modelRes.ok) {
+            const md = await modelRes.json();
+            if (!cancelled) setAvailableModels(Array.isArray(md?.models) ? md.models : []);
+          } else if (!cancelled) {
+            setAvailableModels([]);
+          }
+        } else if (!cancelled) {
+          setAvailableModels([]);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingFilters(false);
+      }
+    }
+    loadFilters();
+    return () => { cancelled = true; };
+  }, [mobileDeConnected, baseDomain, searchDraft.make, search.make]);
 
   // Parse query params once
   useEffect(() => {
@@ -220,6 +275,7 @@ export default function InventoryPage() {
       const model = params.get('model') || '';
       const q = params.get('q') || '';
       setSearch({ make, model, q });
+      setSearchDraft({ make, model, q });
     } catch {}
   }, []);
 
@@ -256,9 +312,84 @@ export default function InventoryPage() {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
-        <h1 className="text-3xl font-bold mb-8 text-center text-gray-800">
+        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
           Car Inventory
         </h1>
+
+        {/* Search and sorting */}
+        <div className="max-w-5xl mx-auto mb-6 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setSearch({
+                make: (searchDraft.make || '').trim(),
+                model: (searchDraft.model || '').trim(),
+                q: (searchDraft.q || '').trim(),
+              });
+            }}
+            className="grid grid-cols-1 md:grid-cols-5 gap-3"
+          >
+            <div className="md:col-span-1">
+              <label className="block text-sm text-gray-600 mb-1">Make</label>
+              <select
+                value={searchDraft.make}
+                onChange={(e) => setSearchDraft(s => ({ ...s, make: e.target.value, model: '' }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              >
+                <option value="">All</option>
+                {availableMakes.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-sm text-gray-600 mb-1">Model</label>
+              <select
+                value={searchDraft.model}
+                onChange={(e) => setSearchDraft(s => ({ ...s, model: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                disabled={!searchDraft.make && !search.make}
+              >
+                <option value="">All</option>
+                {availableModels.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-600 mb-1">Search term</label>
+              <input
+                value={searchDraft.q}
+                onChange={(e) => setSearchDraft(s => ({ ...s, q: e.target.value }))}
+                placeholder="Keyword in model description"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-sm text-gray-600 mb-1">Sort by</label>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as any)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="makeModelAsc">Make/Model A → Z</option>
+                <option value="makeModelDesc">Make/Model Z → A</option>
+              </select>
+            </div>
+            <div className="md:col-span-5 flex items-center justify-end gap-2">
+              <button type="submit" className="px-4 py-2 bg-black text-white rounded-lg">Search</button>
+              <button
+                type="button"
+                className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg"
+                onClick={() => { setSearchDraft({ make: '', model: '', q: '' }); setSearch({}); }}
+              >
+                Reset
+              </button>
+            </div>
+          </form>
+        </div>
 
         {!allowed && (
           <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-center max-w-2xl mx-auto">

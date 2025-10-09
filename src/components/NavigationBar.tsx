@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
+import { captureEvent } from "@/lib/analytics";
 
 interface NavigationBarProps {
   logo?: string;
@@ -38,6 +39,7 @@ export default function NavigationBar({
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
     }
+    try { captureEvent('navbar_click', { section: id }); } catch {}
   };
 
   return (
@@ -80,6 +82,7 @@ export default function NavigationBar({
           <a
             href="/login"
             className="text-slate-300 hover:text-white transition-colors font-medium"
+            onClick={() => { try { captureEvent('navbar_click', { section: 'login' }); } catch {} }}
           >
             Sign in
           </a>

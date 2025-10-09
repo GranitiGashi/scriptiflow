@@ -78,8 +78,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         // Calendar: pro+
         if (isPro) items.push({ name: "Calendar", path: "/dashboard/calendar", icon: "fas fa-calendar"});
         
-        // Settings
-        items.push({ name: "Settings", path: "/dashboard/settings", icon: "fas fa-cog"});
         // Background Remover: always shown at the end; locked for < premium
         items.push({ name: isPremium ? "Background Remover" : "Background Remover (Locked)", path: "/dashboard/background-remover", icon: "fas fa-cut", disabled: !isPremium });
         // Credits (kept for all tiers)
@@ -159,18 +157,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               )}
             </li>
           ))}
-          <li>
-            <button
-              onClick={() => {
-                localStorage.clear();
-                router.push("/login");
-              }}
-              className="flex items-center hover:text-gray-300 text-gray-200 w-full text-left"
-            >
-              <i className="fas fa-sign-out-alt mr-3 text-lg" />
-              Logout
-            </button>
-          </li>
         </ul>
       </nav>
     </aside>

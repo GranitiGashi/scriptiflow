@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaExternalLinkAlt, FaLock } from 'react-icons/fa';
 import authManager from '@/lib/auth';
 import Link from 'next/link';
+import { captureEvent } from '@/lib/analytics';
 type UserApp = {
   id: string;
   name: string;
@@ -74,6 +75,7 @@ export default function AppBoxes() {
   const handleDeleteApp = async (app: UserApp) => {};
 
   const openApp = (url: string) => {
+    try { captureEvent('appbox_open', { url }); } catch {}
     if (url.startsWith('http://') || url.startsWith('https://')) {
       window.open(url, '_blank', 'noopener,noreferrer');
     } else {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import AnalyticsProvider from "@/components/AnalyticsProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -54,6 +55,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <AnalyticsProvider>
         {/* Structured Data for SEO */}
         <script
           type="application/ld+json"
@@ -85,6 +87,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        </AnalyticsProvider>
       </body>
     </html>
   );
