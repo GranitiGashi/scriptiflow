@@ -1,6 +1,5 @@
 'use client';
 
-import DashboardLayout from '@/components/DashboardLayout';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import authManager from '@/lib/auth';
 
@@ -113,7 +112,6 @@ export default function InboxPage() {
   const activeConv = useMemo(() => conversations.find(c => c.id === activeId) || null, [conversations, activeId]);
 
   return (
-    <DashboardLayout>
       <div className="min-h-screen bg-gray-50 p-4 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg shadow-md p-3 md:p-4 md:col-span-1">
           <h2 className="text-lg font-semibold mb-3">Conversations</h2>
@@ -174,7 +172,6 @@ export default function InboxPage() {
           )}
         </div>
       </div>
-    </DashboardLayout>
   );
 }
 

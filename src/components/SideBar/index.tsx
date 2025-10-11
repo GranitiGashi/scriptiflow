@@ -66,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         const isPro = tier === 'pro' || tier === 'premium';
         const isPremium = tier === 'premium';
         // Visible to all tiers
-        items.push({ name: "Integrations", path: "/dashboard/social-media", icon: "fab fa-facebook" });
+        items.push({ name: "Integrations", path: "/dashboard/integrations", icon: "fab fa-facebook" });
         items.push({ name: "Autopost", path: "/dashboard/social-media/autopost", icon: "fas fa-bolt" });
         items.push({ name: "My Inventory", path: "/dashboard/inventory", icon: "fab fa-facebook"});
         // Contacts (CRM): pro+
@@ -141,6 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               ) : (
                 <Link
                   href={item.path}
+                  prefetch={item.path !== '/dashboard/calendar'}
                   onClick={(e) => {
                     if (item.disabled) {
                       e.preventDefault();

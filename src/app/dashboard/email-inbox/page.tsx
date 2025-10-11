@@ -1,6 +1,5 @@
 'use client';
 
-import DashboardLayout from '@/components/DashboardLayout';
 import { useEffect, useState } from 'react';
 import authManager from '@/lib/auth';
 import { Box, Button, Divider, TextField } from '@mui/material';
@@ -41,7 +40,6 @@ export default function EmailInboxPage() {
   const active = leads.find(l => l.id === expandedId) || null;
 
   return (
-    <DashboardLayout>
       <Box sx={{ minHeight: '100vh', bgcolor: '#f9fafb', p: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
           <Box sx={{ fontSize: 18, fontWeight: 600 }}>Email Inbox</Box>
@@ -84,7 +82,6 @@ export default function EmailInboxPage() {
           </Box>
         </Box>
       </Box>
-    </DashboardLayout>
   );
 }
 

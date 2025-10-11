@@ -111,7 +111,7 @@ const LoginForm: React.FC = () => {
 
           <div className="w-full max-w-md mx-auto lg:ml-auto bg-black/50 border border-purple-500/30 rounded-xl shadow-lg p-8">
             <h2 className="mb-6 text-2xl font-bold text-center">Sign in to your account</h2>
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-6" onSubmit={handleSubmit} method="post" autoComplete="off" noValidate>
               <div>
                 <label htmlFor="email" className="block mb-2 text-sm text-gray-300">Email</label>
                 <input
@@ -123,6 +123,7 @@ const LoginForm: React.FC = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  autoComplete="username"
                 />
               </div>
               <div>
@@ -136,6 +137,7 @@ const LoginForm: React.FC = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
+                  autoComplete="current-password"
                 />
                 <div className="mt-2 text-right">
                   <a href="/auth/forgot-password" className="text-xs text-purple-300 hover:text-purple-200">Forgot password?</a>

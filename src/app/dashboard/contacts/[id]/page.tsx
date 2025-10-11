@@ -1,6 +1,5 @@
 'use client';
 
-import DashboardLayout from '@/components/DashboardLayout';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import authManager from '@/lib/auth';
@@ -37,7 +36,6 @@ export default function ContactDetailPage() {
   const [tab, setTab] = useState(0);
 
   return (
-    <DashboardLayout>
       <Box sx={{ minHeight: '100vh', bgcolor: '#f9fafb', p: 2 }}>
         <Box sx={{ textAlign: 'center', mb: 2 }}>
           <Avatar sx={{ width: 72, height: 72, mx: 'auto' }}>{initials}</Avatar>
@@ -97,7 +95,6 @@ export default function ContactDetailPage() {
           </CardContent>
         </Card>
       </Box>
-    </DashboardLayout>
   );
 }
 

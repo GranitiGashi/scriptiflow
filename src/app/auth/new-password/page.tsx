@@ -22,9 +22,12 @@ export default function NewPasswordPage() {
       const refresh = params.get('refresh_token');
       const expiresAt = params.get('expires_at');
       if (access && refresh) {
-        localStorage.setItem('access_token', access);
-        localStorage.setItem('refresh_token', refresh);
-        if (expiresAt) localStorage.setItem('expires_at', expiresAt);
+        // Store tokens only in memory during this tab session
+        try {
+          (window as any).__pw_tmp_access = access;
+          (window as any).__pw_tmp_refresh = refresh;
+          if (expiresAt) (window as any).__pw_tmp_expires = expiresAt;
+        } catch {}
         // Remove hash from URL
         try { window.history.replaceState(null, '', window.location.pathname); } catch {}
       }
@@ -38,24 +41,28 @@ export default function NewPasswordPage() {
     if (password !== confirm) { setError('Passwords do not match'); return; }
     setLoading(true);
     try {
-      const access = localStorage.getItem('access_token');
-      const refresh = localStorage.getItem('refresh_token');
+      const access = (typeof window !== 'undefined' ? (window as any).__pw_tmp_access : null) as string | null;
+      const refresh = (typeof window !== 'undefined' ? (window as any).__pw_tmp_refresh : null) as string | null;
       if (!access || !refresh) {
         setError('Missing session. Use the email link from your inbox.');
         setLoading(false);
         return;
       }
-      const mode = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('mode') || undefined) : undefined;
+      const sp = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : undefined;
+      const mode = sp ? (sp.get('mode') || undefined) : undefined;
+      const state = sp ? (sp.get('state') || undefined) : undefined;
       const res = await fetch(`${baseDomain}/api/set-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${access}`, 'x-refresh-token': refresh },
-        body: JSON.stringify({ password, mode }),
+        body: JSON.stringify({ password, mode, state }),
       });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'Failed to set password');
       }
       setStatus('Password updated. You can now log in.');
+      // Clear temporary tokens from memory only
+      try { (window as any).__pw_tmp_access = null; (window as any).__pw_tmp_refresh = null; (window as any).__pw_tmp_expires = null; } catch {}
       setTimeout(() => router.push('/login'), 1200);
     } catch (e: any) {
       setError(e.message);
@@ -71,7 +78,7 @@ export default function NewPasswordPage() {
         <form onSubmit={submit} className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Min 12 chars, upper, lower, number, symbol" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Confirm password</label>

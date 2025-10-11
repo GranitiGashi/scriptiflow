@@ -138,7 +138,7 @@ export default function AccountSetupProgress() {
       description: 'Import your car listings from either marketplace',
       icon: <FaCar className="text-green-600" />,
       completed: connections.mobilede || connections.autoscout24,
-      actionUrl: '/dashboard/social-media',
+      actionUrl: '/dashboard/inventory',
       actionText: 'Connect Inventory',
     },
     {
@@ -152,7 +152,7 @@ export default function AccountSetupProgress() {
         </div>
       ),
       completed: connections.facebook && connections.instagram,
-      actionUrl: '/dashboard/social-media',
+      actionUrl: '/dashboard/inventory',
       actionText: 'Connect Social Media',
     },
   ];

@@ -1,6 +1,5 @@
 'use client';
 
-import DashboardLayout from '@/components/DashboardLayout';
 import { useEffect, useMemo, useState } from 'react';
 import authManager from '@/lib/auth';
 
@@ -85,7 +84,6 @@ export default function EmailInboxPageAlias() {
   };
 
   return (
-    <DashboardLayout>
       <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Email Leads</h2>
@@ -141,7 +139,6 @@ export default function EmailInboxPageAlias() {
           </div>
         ))}
       </div>
-    </DashboardLayout>
   );
 }
 

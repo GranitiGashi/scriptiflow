@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import authManager from "@/lib/auth";
 
 type Listing = {
@@ -124,7 +123,6 @@ export default function MobileDeAutopostPage() {
   }
 
   return (
-    <DashboardLayout>
       <div className="space-y-6">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
@@ -199,7 +197,6 @@ export default function MobileDeAutopostPage() {
           )}
         </div>
       </div>
-    </DashboardLayout>
   );
 }
 

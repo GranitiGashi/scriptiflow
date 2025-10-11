@@ -2,15 +2,13 @@
 import { Elements } from '@stripe/react-stripe-js';
 import { stripePromise } from '../../../../lib/stripe';
 import SaveCardForm from '../../../../components/SaveCardForm';
-import DashboardLayout from '@/components/DashboardLayout';
 import { hasTierOrAbove, getUserTier } from '@/lib/permissions';
 
 export default function SaveCardPage() {
 	const allowed = hasTierOrAbove('pro');
 	const tier = getUserTier();
-	return (
-		<DashboardLayout>
-			<div className="p-10">
+  return (
+      <div className="p-10">
 				<h1 className="text-2xl font-bold mb-4">Save a Payment Method</h1>
 				{allowed ? (
 					<Elements stripe={stripePromise}>
@@ -21,8 +19,7 @@ export default function SaveCardPage() {
 						Stripe ist im {tier ?? 'Basic'}-Paket gesperrt. Bitte upgraden, um fortzufahren.
 					</div>
 				)}
-			</div>
-		</DashboardLayout>
+      </div>
 	);
 }
 

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Elements } from '@stripe/react-stripe-js';
 import { stripePromise } from '@/lib/stripe';
 import SaveCardForm from '@/components/SaveCardForm';
-import DashboardLayout from "@/components/DashboardLayout";
 import authManager from "@/lib/auth";
 
 export default function SettingsPage() {
@@ -128,7 +127,10 @@ export default function SettingsPage() {
     setPwdMsg(null);
     try {
       if (!pwdCurrent) throw new Error('Current password is required');
-      if (!pwdNew || pwdNew.length < 8) throw new Error('New password must be at least 8 characters');
+      if (!pwdNew || pwdNew.length < 12) throw new Error('New password must be at least 12 characters');
+      if (!/[a-z]/.test(pwdNew) || !/[A-Z]/.test(pwdNew) || !/[0-9]/.test(pwdNew) || !/[~`!@#$%^&*()_+\-={}\[\]|;:"'<>,.?/]/.test(pwdNew)) {
+        throw new Error('Password must include upper, lower, number, and symbol');
+      }
       if (pwdNew !== pwdConfirm) throw new Error('Passwords do not match');
       const res = await authManager.authenticatedFetch(`${base}/api/change-password`, {
         method: 'POST',
@@ -149,7 +151,6 @@ export default function SettingsPage() {
   useEffect(() => { load(); }, []);
 
   return (
-    <DashboardLayout>
       <div className="space-y-6">
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
           <div className="flex flex-wrap gap-2">
@@ -548,7 +549,6 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }
 

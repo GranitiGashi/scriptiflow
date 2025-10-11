@@ -1,6 +1,5 @@
 'use client';
 
-import DashboardLayout from '@/components/DashboardLayout';
 import { hasTierOrAbove, getUserTier } from '@/lib/permissions';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -310,7 +309,6 @@ export default function InventoryPage() {
   };
 
   return (
-    <DashboardLayout>
       <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
         <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
           Car Inventory
@@ -479,6 +477,5 @@ export default function InventoryPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }

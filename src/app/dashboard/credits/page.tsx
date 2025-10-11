@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import authManager from "@/lib/auth";
 
 export default function CreditsPage() {
@@ -46,7 +45,6 @@ export default function CreditsPage() {
   useEffect(() => { load(); }, []);
 
   return (
-    <DashboardLayout>
       <div className="space-y-6">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h1 className="text-xl font-semibold">Credits</h1>
@@ -70,7 +68,6 @@ export default function CreditsPage() {
           {err && <div className="mt-3 text-red-600 text-sm">{err}</div>}
         </div>
       </div>
-    </DashboardLayout>
   );
 }
 

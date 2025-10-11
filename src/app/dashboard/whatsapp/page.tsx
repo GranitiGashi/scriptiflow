@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import authManager from "@/lib/auth";
 
 export default function WhatsAppDemoPage() {
@@ -90,7 +89,6 @@ export default function WhatsAppDemoPage() {
   }, []);
 
   return (
-    <DashboardLayout>
       <div className="space-y-6">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between">
@@ -142,6 +140,5 @@ export default function WhatsAppDemoPage() {
           {error && <div className="mt-3 text-red-600 text-sm">{error}</div>}
         </div>
       </div>
-    </DashboardLayout>
   );
 }

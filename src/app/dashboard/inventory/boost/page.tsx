@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import DashboardLayout from '@/components/DashboardLayout';
 import { useRouter } from 'next/navigation';
 import authManager from '@/lib/auth';
  
@@ -410,7 +409,6 @@ export default function BoostPage() {
   }
 
   return (
-    <DashboardLayout>
       <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
@@ -620,7 +618,6 @@ export default function BoostPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }
 

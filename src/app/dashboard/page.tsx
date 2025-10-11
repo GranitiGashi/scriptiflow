@@ -1,6 +1,5 @@
 'use client';
 import React from 'react';
-import DashboardLayout from '../../components/DashboardLayout';
 import AccountSetupProgress from '../../components/AccountSetupProgress';
 import DashboardCues from '../../components/DashboardCues';
 import AppBoxes from '../../components/AppBoxes';
@@ -19,7 +18,6 @@ const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <DashboardLayout>
       <div className="space-y-6">
         {/* Quick Access App Boxes */}
         <AppBoxes />
@@ -74,7 +72,7 @@ const Dashboard: React.FC = () => {
               <span className="text-sm font-medium">Manage Ads</span>
             </a>
             <a
-              href="/dashboard/social-media"
+              href="/dashboard/integrations"
               className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <i className="fas fa-link text-2xl text-blue-600 mb-2"></i>
@@ -90,7 +88,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 };
 

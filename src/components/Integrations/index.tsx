@@ -500,6 +500,12 @@ export default function ConnectPage() {
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded ${item.connected? 'bg-green-100 text-green-700':'bg-gray-100 text-gray-700'}`}>{item.connected? 'Connected':'Not connected'}</span>
                       </div>
+                      {item.connected && (
+                        <div className="mt-1 text-xs text-gray-600">
+                          {item.key==='mobilede' && mobileDe?.username && (<span>Username: {mobileDe.username}</span>)}
+                          {item.key==='autoscout24' && as24?.client_id && (<span>Username: {as24.client_id}</span>)}
+                        </div>
+                      )}
                       <div className="mt-4">
                         {!item.connected ? (
                           <button
@@ -548,6 +554,12 @@ export default function ConnectPage() {
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded ${item.connected? 'bg-green-100 text-green-700':'bg-gray-100 text-gray-700'}`}>{item.connected? 'Connected':'Not connected'}</span>
                       </div>
+                      {item.connected && (
+                        <div className="mt-1 text-xs text-gray-600">
+                          {item.key==='facebook' && accounts.facebook_name && (<span>Page: {accounts.facebook_name}</span>)}
+                          {item.key==='instagram' && accounts.instagram_username && (<span>@{accounts.instagram_username}</span>)}
+                        </div>
+                      )}
                       <div className="mt-4">
                         {!item.connected ? (
                           <button
@@ -555,7 +567,21 @@ export default function ConnectPage() {
                             onClick={async()=>{ try { const r = await authManager.authenticatedFetch(`${baseDomain}/api/fb/login-url`); const d = await r.json(); if (d?.auth_url) window.location.href = d.auth_url; } catch {} }}
                           >Connect</button>
                         ) : (
-                          <button className="px-3 py-1.5 bg-gray-200 text-gray-800 rounded" onClick={()=>alert('Disconnect via Facebook Business settings.')}>Disconnect</button>
+                          <button className="px-3 py-1.5 bg-gray-200 text-gray-800 rounded" onClick={async()=>{
+                            try {
+                              const r = await authManager.authenticatedFetch(`${baseDomain}/api/social/disconnect`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: item.key }) });
+                              if (r.ok) {
+                                setAccounts(s=>({
+                                  facebook_id: item.key==='facebook'? null : s.facebook_id,
+                                  facebook_name: item.key==='facebook'? null : s.facebook_name,
+                                  facebook_profile_picture: item.key==='facebook'? null : s.facebook_profile_picture,
+                                  instagram_id: item.key==='instagram'? null : s.instagram_id,
+                                  instagram_username: item.key==='instagram'? null : s.instagram_username,
+                                  instagram_profile_picture: item.key==='instagram'? null : s.instagram_profile_picture,
+                                }));
+                              }
+                            } catch {}
+                          }}>Disconnect</button>
                         )}
                       </div>
                     </div>
@@ -592,6 +618,13 @@ export default function ConnectPage() {
                         <div className="mt-2 text-xs text-gray-600 min-h-[1rem]">
                           {item.locked && (item.key==='whatsapp' ? 'Premium required' : 'Pro required')}
                         </div>
+                        {item.connected && (
+                          <div className="mt-1 text-xs text-gray-600">
+                            {item.key==='whatsapp' && wa.phoneNumberId && (<span>Phone ID: {wa.phoneNumberId}</span>)}
+                            {item.key==='gmail' && emailStatus.gmail.account_email && (<span>{emailStatus.gmail.account_email}</span>)}
+                            {item.key==='outlook' && emailStatus.outlook.account_email && (<span>{emailStatus.outlook.account_email}</span>)}
+                          </div>
+                        )}
                         <div className="mt-2">
                           {!item.connected ? (
                             <button

@@ -15,19 +15,20 @@ export default function ForgotPasswordPage() {
     setStatus(null);
     setError(null);
     try {
+      const payload: any = { email };
+      // If CAPTCHA is enabled on backend, you can attach token here
+      // payload.captcha_token = (window as any).captchaToken || undefined;
       const res = await fetch(`${baseDomain}/api/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to send recovery email');
-      }
+      // Always show success to avoid enumeration
       setStatus('If an account exists, a recovery email has been sent.');
       setEmail('');
     } catch (e: any) {
-      setError(e.message);
+      // Show generic status regardless of error
+      setStatus('If an account exists, a recovery email has been sent.');
     } finally {
       setLoading(false);
     }

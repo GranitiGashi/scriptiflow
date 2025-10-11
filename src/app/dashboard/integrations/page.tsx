@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic';
 import { getUserTier } from '@/lib/permissions';
-import DashboardLayout from '@/components/DashboardLayout';
 
 const Integrations = dynamic(() => import('@/components/Integrations'), { ssr: false });
 
@@ -16,11 +15,9 @@ export default function Page() {
   );
 
   return (
-    <DashboardLayout>
       <div className="max-w-6xl mx-auto w-full">
         {tier === 'basic' && lockedFeaturesBanner}
         <Integrations />
       </div>
-    </DashboardLayout>
   );
 }

@@ -1,6 +1,5 @@
 'use client';
 
-import DashboardLayout from '@/components/DashboardLayout';
 import { useEffect, useMemo, useState } from 'react';
 import authManager from '@/lib/auth';
 import { DataGrid, GridColDef, GridToolbar } from '@mui/x-data-grid';
@@ -141,7 +140,6 @@ export default function ContactsPage() {
   ];
 
   return (
-    <DashboardLayout>
       <Box sx={{ minHeight: '100vh', bgcolor: '#f9fafb', p: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end', justifyContent: 'space-between', mb: 2 }}>
           <Box>
@@ -186,7 +184,6 @@ export default function ContactsPage() {
           <Box sx={{ fontSize: 12, color: 'text.secondary' }}>Selected: {selectedIds.length}</Box>
         </Box>
       </Box>
-    </DashboardLayout>
   );
 }
 

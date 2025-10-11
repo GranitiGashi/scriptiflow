@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import DashboardLayout from '../../../components/DashboardLayout';
+// Layout now provided by app/dashboard/layout.tsx
 import AdminUserApps from '../../../components/AdminUserApps';
 import AdminTickets from '../../../components/AdminTickets';
 import authManager from '@/lib/auth';
@@ -43,17 +43,14 @@ const AdminDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <DashboardLayout>
         <div className="flex items-center justify-center min-h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
-      </DashboardLayout>
     );
   }
 
   if (isAdmin === false) {
     return (
-      <DashboardLayout>
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
             <div className="text-6xl mb-4">🚫</div>
@@ -69,12 +66,10 @@ const AdminDashboard: React.FC = () => {
             </button>
           </div>
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout>
       <div className="space-y-6">
         {/* Admin Header */}
         <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl shadow-sm p-6 text-white">
@@ -95,7 +90,6 @@ const AdminDashboard: React.FC = () => {
         {/* Support Tickets Management */}
         <AdminTickets />
       </div>
-    </DashboardLayout>
   );
 };
 
