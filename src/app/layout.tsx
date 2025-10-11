@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import AnalyticsProvider from "@/components/AnalyticsProvider";
+import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -55,39 +56,41 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <AnalyticsProvider>
-        {/* Structured Data for SEO */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'SoftwareApplication',
-              name: 'ScriptiFlow',
-              applicationCategory: 'BusinessApplication',
-              operatingSystem: 'Any',
-              offers: { 
-                '@type': 'Offer', 
-                price: '299', 
-                priceCurrency: 'EUR',
-                availability: 'https://schema.org/InStock'
-              },
-              description:
-                'Mobile.de integration, AI-powered Facebook & Instagram ads, social media autoposting, email automation & analytics for car dealerships.',
-              url: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
-              featureList: [
-                'Mobile.de Integration',
-                'AI-Powered Social Media Ads',
-                'Automated Email Campaigns',
-                'Social Media Autoposting',
-                'Advanced Analytics Dashboard',
-                'Stripe Payment Integration'
-              ],
-            }),
-          }}
-        />
-        {children}
-        </AnalyticsProvider>
+        <Suspense fallback={null}>
+          <AnalyticsProvider>
+          {/* Structured Data for SEO */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'SoftwareApplication',
+                name: 'ScriptiFlow',
+                applicationCategory: 'BusinessApplication',
+                operatingSystem: 'Any',
+                offers: { 
+                  '@type': 'Offer', 
+                  price: '299', 
+                  priceCurrency: 'EUR',
+                  availability: 'https://schema.org/InStock'
+                },
+                description:
+                  'Mobile.de integration, AI-powered Facebook & Instagram ads, social media autoposting, email automation & analytics for car dealerships.',
+                url: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
+                featureList: [
+                  'Mobile.de Integration',
+                  'AI-Powered Social Media Ads',
+                  'Automated Email Campaigns',
+                  'Social Media Autoposting',
+                  'Advanced Analytics Dashboard',
+                  'Stripe Payment Integration'
+                ],
+              }),
+            }}
+          />
+          {children}
+          </AnalyticsProvider>
+        </Suspense>
       </body>
     </html>
   );
