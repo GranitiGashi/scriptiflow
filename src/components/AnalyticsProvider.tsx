@@ -40,7 +40,7 @@ export default function AnalyticsProvider({ children }: Props) {
     } catch {}
   }, [pathname, search]);
 
-  return children as React.ReactElement;
+  return <>{children}</>;
 }
 
 
