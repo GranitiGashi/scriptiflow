@@ -27,14 +27,24 @@ export default function WhatsAppEmbeddedSignup({ userId, configId, onSuccess, on
         xfbml: true,
         version: 'v19.0',
       });
+    
       console.log('FB SDK initialized');
-      setSdkReady(true);
+    
+      // Check if FB is really ready
+      const checkFBReady = () => {
+        if ((window as any).FB && typeof (window as any).FB.login === 'function') {
+          setSdkReady(true);
+          console.log('FB SDK is fully ready');
+        } else {
+          setTimeout(checkFBReady, 100);
+        }
+      };
+      checkFBReady();
     };
-
     // Load SDK script
-    if (!document.getElementById('facebook-jssdk')) {
+    if (!document.getElementById('facebook-sdk')) {
       const script = document.createElement('script');
-      script.id = 'facebook-jssdk';
+      script.id = 'facebook-sdk';
       script.src = 'https://connect.facebook.net/en_US/sdk.js';
       script.async = true;
       script.defer = true;
