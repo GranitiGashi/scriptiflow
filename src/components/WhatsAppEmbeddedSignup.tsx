@@ -22,7 +22,7 @@ export default function WhatsAppEmbeddedSignup({ userId, configId, onSuccess, on
     // Define fbAsyncInit before loading the SDK
     (window as any).fbAsyncInit = function () {
       (window as any).FB.init({
-        appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
+        appId: 1821140208461098,
         autoLogAppEvents: true,
         xfbml: true,
         version: 'v19.0',
