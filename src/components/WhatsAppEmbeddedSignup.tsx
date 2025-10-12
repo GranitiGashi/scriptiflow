@@ -78,9 +78,19 @@ export default function WhatsAppEmbeddedSignup({ userId, configId, onSuccess, on
               xfbml: true,
               version: 'v19.0',
             });
-            console.log('FB SDK initialized');
-            // Add small delay to ensure init fully completes
-            setTimeout(() => setSdkReady(true), 300);
+            console.log('FB SDK init called');
+            // Poll getLoginStatus to ensure SDK is fully ready
+            const checkReady = () => {
+              if ((window as any).FB?.getLoginStatus) {
+                (window as any).FB.getLoginStatus(() => {
+                  console.log('FB SDK ready');
+                  setSdkReady(true);
+                });
+              } else {
+                setTimeout(checkReady, 100);
+              }
+            };
+            checkReady();
           };
           // Trigger init if FB is already available
           if ((window as any).FB) {
