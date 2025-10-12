@@ -7,6 +7,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import authManager from '@/lib/auth';
 import { getUserTier } from '@/lib/permissions';
+import WhatsAppEmbeddedSignup from '@/components/WhatsAppEmbeddedSignup';
 
 export default function ConnectPage() {
   const [accounts, setAccounts] = useState<{
@@ -810,7 +811,22 @@ export default function ConnectPage() {
               <h2 className="text-xl font-semibold mb-4">Connect WhatsApp</h2>
               <div className="space-y-6">
                 <div className="p-3 border rounded">
-                  <div className="font-medium mb-2">Recommended: Auto-detect phone numbers (via Facebook login)</div>
+                  <div className="font-medium mb-2">Embedded Signup (Recommended)</div>
+                  <p className="text-xs text-gray-600 mb-3">One-click setup via Facebook SDK. Your WhatsApp Business will be connected automatically.</p>
+                  <WhatsAppEmbeddedSignup
+                    userId={userId || undefined}
+                    configId={process.env.NEXT_PUBLIC_WHATSAPP_CONFIG_ID || ''}
+                    onSuccess={() => {
+                      alert('WhatsApp connected successfully!');
+                      setWa({ connected: true, phoneNumberId: null });
+                      setWaOpen(false);
+                      window.location.reload();
+                    }}
+                    onError={(err) => alert(`WhatsApp signup error: ${err}`)}
+                  />
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="font-medium mb-2">Auto-detect phone numbers (via Facebook login)</div>
                   <button
                     className="bg-black text-white px-4 py-2 rounded"
                     onClick={async () => {

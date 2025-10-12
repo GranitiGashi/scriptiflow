@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import authManager from "@/lib/auth";
+import WhatsAppEmbeddedSignup from "@/components/WhatsAppEmbeddedSignup";
 
 type Listing = {
   mobile_ad_id: string;

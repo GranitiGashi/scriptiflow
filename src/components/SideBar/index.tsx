@@ -66,9 +66,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         const isPro = tier === 'pro' || tier === 'premium';
         const isPremium = tier === 'premium';
         // Visible to all tiers
-        items.push({ name: "Integrations", path: "/dashboard/integrations", icon: "fab fa-facebook" });
-        items.push({ name: "Autopost", path: "/dashboard/social-media/autopost", icon: "fas fa-bolt" });
-        items.push({ name: "My Inventory", path: "/dashboard/inventory", icon: "fab fa-facebook"});
+        items.push({ name: "Social", path: "/dashboard/social", icon: "fas fa-share-nodes" });
+        items.push({ name: "My Inventory", path: "/dashboard/inventory", icon: "fas fa-car"});
+        items.push({ name: "Autopost", path: "/dashboard/integrations/autopost", icon: "fas fa-bolt" });
         // Contacts (CRM): pro+
         if (isPro) items.push({ name: "Contacts", path: "/dashboard/contacts", icon: "fas fa-address-book"});
         // WhatsApp inbox: premium only
@@ -77,6 +77,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         if (isPro) items.push({ name: "Email Inbox", path: "/dashboard/email-inbox", icon: "fas fa-envelope"});
         // Calendar: pro+
         if (isPro) items.push({ name: "Calendar", path: "/dashboard/calendar", icon: "fas fa-calendar"});
+        // Social Posts monitor
+        if (isPro) items.push({ name: "Social Posts", path: "/dashboard/social-posts", icon: "fas fa-share-alt" });
         
         // Background Remover: always shown at the end; locked for < premium
         items.push({ name: isPremium ? "Background Remover" : "Background Remover (Locked)", path: "/dashboard/background-remover", icon: "fas fa-cut", disabled: !isPremium });
@@ -107,7 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <img
             src={dealerLogoUrl}
             alt="Dealership Logo"
-            className="w-16 h-16 object-contain bg-white rounded p-1"
+            className="w-auto h-16 object-contain rounded p-1"
           />
         </div>
       )}
@@ -120,9 +122,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         
       </button> */}
 
-      <h2 className="text-2xl font-bold mb-6 text-gray-100">
+      {/* <h2 className="text-2xl font-bold mb-6 text-gray-100">
         {role ?? "User"} Panel
-      </h2>
+      </h2> */}
       <nav>
         <ul className="space-y-4">
           {navItems.map((item) => (

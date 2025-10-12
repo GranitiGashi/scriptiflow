@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaCar } from 'react-icons/fa';
 import authManager from '@/lib/auth';
+import { Dialog } from '@mui/material';
 
 interface Car {
   id: string;
@@ -43,6 +44,15 @@ export default function InventoryPage() {
   const [availableMakes, setAvailableMakes] = useState<string[]>([]);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isLoadingFilters, setIsLoadingFilters] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [previewCaption, setPreviewCaption] = useState<string>('');
+  const [previewCar, setPreviewCar] = useState<Car | null>(null);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<{ facebook: boolean; instagram: boolean }>({ facebook: true, instagram: true });
+  const [selectedIdxs, setSelectedIdxs] = useState<Set<number>>(new Set());
+  const [autoSelectTop10, setAutoSelectTop10] = useState(true);
+  const [posting, setPosting] = useState(false);
 
   // Check if mobile.de account is connected
   useEffect(() => {
@@ -145,15 +155,20 @@ export default function InventoryPage() {
           const model = c?.vehicle?.model?.['@key'] || c?.vehicle?.model || c?.model || '';
           const modelDescription = c?.vehicle?.['model-description']?.['@value'] || c?.modelDescription || '';
 
-          const priceVal = (c?.price?.['consumer-price-amount']?.['@value']
-            || c?.price?.consumerPrice?.amount
-            || c?.price?.amount
-            || c?.price)
-            || '';
-          const currency = (c?.price?.['@currency']
-            || c?.price?.consumerPrice?.currency
-            || c?.currency)
-            || 'EUR';
+          // Robust price extraction across shapes
+          let priceVal: any = '';
+          if (c?.price?.['consumer-price-amount']?.['@value']) priceVal = c.price['consumer-price-amount']['@value'];
+          else if (c?.price?.consumerPrice?.amount?.['@value']) priceVal = c.price.consumerPrice.amount['@value'];
+          else if (c?.price?.consumerPrice?.amount != null) priceVal = c.price.consumerPrice.amount;
+          else if (c?.price?.amount?.['@value']) priceVal = c.price.amount['@value'];
+          else if (c?.price?.amount != null) priceVal = c.price.amount;
+          else if (typeof c?.price === 'number' || typeof c?.price === 'string') priceVal = c.price;
+          const priceStr = (priceVal != null && typeof priceVal !== 'object') ? String(priceVal) : '';
+          let currency = 'EUR';
+          if (typeof c?.price?.['@currency'] === 'string') currency = c.price['@currency'];
+          else if (typeof c?.price?.consumerPrice?.currency === 'string') currency = c.price.consumerPrice.currency;
+          else if (typeof c?.price?.['consumer-price-amount']?.['@currency'] === 'string') currency = c.price['consumer-price-amount']['@currency'];
+          else if (typeof c?.currency === 'string') currency = c.currency;
 
           let image: string | null = null;
           if (mobileDeConnected) {
@@ -205,7 +220,7 @@ export default function InventoryPage() {
             make,
             model,
             modelDescription,
-            price: String(priceVal),
+            price: priceStr,
             currency,
             image,
             mileage: String(mileage),
@@ -307,6 +322,101 @@ export default function InventoryPage() {
       alert('Failed to start boost flow.');
     }
   };
+
+  async function openSocialPreview(car: Car) {
+    try {
+      setPreviewCar(car);
+      setPreviewOpen(true);
+      setPreviewLoading(true);
+      setSelectedPlatforms({ facebook: true, instagram: true });
+      // 1) fetch images for this listing from server
+      const detailsRes = await authManager.authenticatedFetch(`${baseDomain}/api/mobilede/ad-details?mobile_ad_id=${encodeURIComponent(car.id)}`, { headers: { Accept: 'application/json' } });
+      let images: string[] = [];
+      let make = car.make;
+      let model = car.model;
+      let detail_url: string | undefined = car.url;
+      if (detailsRes.ok) {
+        const d = await detailsRes.json();
+        images = Array.isArray(d?.images) ? d.images : [];
+        make = d?.make || make;
+        model = d?.model || model;
+        detail_url = d?.detail_url || detail_url;
+      }
+      if (!images.length && car.image) images = [car.image];
+      setPreviewImages(images);
+      // default selection: first 10
+      const s = new Set<number>();
+      for (let i = 0; i < Math.min(10, images.length); i++) s.add(i);
+      setSelectedIdxs(s);
+      setAutoSelectTop10(true);
+      // 2) generate caption
+      const capRes = await authManager.authenticatedFetch(`${baseDomain}/api/social/generate-caption`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ make, model, language: 'de' }),
+      });
+      if (capRes.ok) {
+        const c = await capRes.json();
+        setPreviewCaption(c?.caption || `${make} ${model}`);
+      } else {
+        setPreviewCaption(`${make} ${model}`);
+      }
+    } catch (_) {
+      setPreviewCaption(`${car.make} ${car.model}`);
+      if (!previewImages.length && car.image) setPreviewImages([car.image]);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  async function queuePost() {
+    if (!previewCar) return;
+    const images = Array.from(selectedIdxs)
+      .sort((a, b) => a - b)
+      .map((i) => previewImages[i])
+      .filter(Boolean)
+      .slice(0, 10);
+    if (images.length === 0) {
+      alert('Please select at least one image');
+      return;
+    }
+    const platforms: Array<'facebook' | 'instagram'> = [];
+    if (selectedPlatforms.facebook) platforms.push('facebook');
+    if (selectedPlatforms.instagram) platforms.push('instagram');
+    if (platforms.length === 0) {
+      alert('Select at least one platform');
+      return;
+    }
+    setPosting(true);
+    try {
+      for (const platform of platforms) {
+        const body = {
+          platform,
+          mobile_ad_id: previewCar.id,
+          images,
+          caption: previewCaption,
+          detail_url: previewCar.url,
+          make: previewCar.make,
+          model: previewCar.model,
+        };
+        const res = await authManager.authenticatedFetch(`${baseDomain}/api/social/queue-post`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error(e?.error || `Failed to queue ${platform}`);
+        }
+      }
+      alert(`Queued to post on ${platforms.join(' & ')}. It will be published shortly.`);
+      setPreviewOpen(false);
+    } catch (e: any) {
+      alert(e?.message || 'Failed to queue post');
+    } finally {
+      setPosting(false);
+    }
+  }
 
   return (
       <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
@@ -426,56 +536,131 @@ export default function InventoryPage() {
         {!loading && filtered.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {filtered.map((car) => (
-              <div
-                key={car.id}
-                className="rounded-xl shadow-lg p-6 bg-white transition-all duration-300 transform hover:scale-105"
-              >
-                {car.image ? (
-                  <img
-                    src={car.image}
-                    alt={`${car.make} ${car.model}`}
-                    className="w-full h-48 object-cover rounded-lg mb-4"
-                  />
-                ) : (
-                  <div className="w-full h-48 bg-gray-200 flex items-center justify-center rounded-lg mb-4">
-                    {/* <FaCar className="text-gray-400 text-4xl" /> */}
+              <div key={car.id} className="rounded-xl overflow-hidden border bg-white shadow-sm hover:shadow-md transition">
+                <div className="relative group">
+                  {car.image ? (
+                    <img src={car.image} alt={`${car.make} ${car.model}`} className="w-full h-48 object-cover" />
+                  ) : (
+                    <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                      {/* <FaCar className="text-gray-400 text-4xl" /> */}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-70 group-hover:opacity-90 transition"></div>
+                  <div className="absolute bottom-2 left-3 text-white font-semibold text-lg">
+                    {car.make} {car.model}
                   </div>
-                )}
-                <h2 className="text-xl font-semibold text-gray-800">
-                  {car.make} {car.model}
-                </h2>
-                <p className="text-sm text-gray-600">{car.modelDescription}</p>
-                <p className="text-lg font-medium text-gray-700 mt-2">
-                  {car.price} {car.currency}
-                </p>
-                {/* <p className="text-sm text-gray-600">Mileage: {car.mileage} km</p>
-                <p className="text-sm text-gray-600">
-                  First Registration: {car.firstRegistration}
-                </p> */}
-                {/* <p className="text-sm text-gray-600">Fuel: {car.fuel}</p>
-                <p className="text-sm text-gray-600">Power: {car.power} kW</p>
-                <p className="text-sm text-gray-600">Gearbox: {car.gearbox}</p> */}
-                <div className="flex space-x-2 mt-4">
-                  <a
-                    href={car.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded text-center"
-                  >
-                    View Details
-                  </a>
-                  <button
-                    onClick={() => allowed ? handleBoostPost(car) : undefined}
-                    className={`text-white text-sm font-medium py-2 px-4 rounded ${allowed ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed flex items-center gap-2'}`}
-                    title={allowed ? 'Boost diesen Beitrag' : 'Upgrade erforderlich: Boost nur ab Pro'}
-                  >
-                    {allowed ? 'Boost Post' : 'Boost (gesperrt)'}
-                  </button>
+                  <div className="absolute top-2 right-2 bg-white/90 text-gray-900 text-sm font-semibold px-2 py-1 rounded">
+                    {(car.price ? `${car.price} ${car.currency}` : '')}
+                  </div>
+                </div>
+                <div className="p-4">
+                  {car.modelDescription && (
+                    <div className="text-sm text-gray-600">{car.modelDescription}</div>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-700">
+                    {car.mileage && <span className="bg-gray-100 px-2 py-1 rounded">Mileage: {car.mileage}</span>}
+                    {car.firstRegistration && <span className="bg-gray-100 px-2 py-1 rounded">First reg: {car.firstRegistration}</span>}
+                    {car.fuel && <span className="bg-gray-100 px-2 py-1 rounded">Fuel: {car.fuel}</span>}
+                    {car.power && <span className="bg-gray-100 px-2 py-1 rounded">Power: {car.power}</span>}
+                    {car.gearbox && <span className="bg-gray-100 px-2 py-1 rounded">Gearbox: {car.gearbox}</span>}
+                  </div>
+                  {(car.dealerCity || car.dealerZip) && (
+                    <div className="mt-2 text-xs text-gray-500">Location: {car.dealerCity || ''} {car.dealerZip ? `(${car.dealerZip})` : ''}</div>
+                  )}
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    <a
+                      href={car.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-center bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-3 rounded"
+                    >
+                      View
+                    </a>
+                    <button
+                      onClick={() => allowed ? handleBoostPost(car) : undefined}
+                      className={`text-white text-sm font-medium py-2 px-3 rounded ${allowed ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'}`}
+                      title={allowed ? 'Boost diesen Beitrag' : 'Upgrade erforderlich: Boost nur ab Pro'}
+                    >
+                      Boost
+                    </button>
+                    <button
+                      onClick={() => allowed ? openSocialPreview(car) : undefined}
+                      className={`text-white text-sm font-medium py-2 px-3 rounded ${allowed ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-400 cursor-not-allowed'}`}
+                      title={allowed ? 'Preview social post' : 'Upgrade erforderlich'}
+                    >
+                      Post
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
+        <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} fullWidth maxWidth="xl">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-lg font-semibold">Social Post Preview</div>
+              <div className="flex items-center gap-3 text-sm">
+                <label className="flex items-center gap-1"><input type="checkbox" checked={selectedPlatforms.facebook} onChange={(e)=>setSelectedPlatforms(p=>({ ...p, facebook: e.target.checked }))} /> Facebook</label>
+                <label className="flex items-center gap-1"><input type="checkbox" checked={selectedPlatforms.instagram} onChange={(e)=>setSelectedPlatforms(p=>({ ...p, instagram: e.target.checked }))} /> Instagram</label>
+              </div>
+            </div>
+            {previewLoading ? (
+              <div className="flex items-center justify-center h-40">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="border rounded p-2 bg-gray-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm text-gray-600">Images ({previewImages.length})</div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <label className="flex items-center gap-1"><input type="checkbox" checked={autoSelectTop10} onChange={(e)=>{
+                        setAutoSelectTop10(e.target.checked);
+                        if (e.target.checked) {
+                          const s = new Set<number>();
+                          for (let i = 0; i < Math.min(10, previewImages.length); i++) s.add(i);
+                          setSelectedIdxs(s);
+                        }
+                      }} /> Auto-select top 10</label>
+                      <button className="px-2 py-1 bg-gray-200 rounded" onClick={()=>{ const s=new Set<number>(); for(let i=0;i<Math.min(10, previewImages.length); i++) s.add(i); setSelectedIdxs(s); setAutoSelectTop10(true); }}>Select 10</button>
+                      <button className="px-2 py-1 bg-gray-200 rounded" onClick={()=>{ setSelectedIdxs(new Set()); setAutoSelectTop10(false); }}>Clear</button>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600 mb-2">Selected: {selectedIdxs.size} / 10</div>
+                  <div className="grid grid-cols-2 gap-2 max-h-[600px] overflow-auto">
+                    {previewImages.map((src, i) => {
+                      const sel = selectedIdxs.has(i);
+                      return (
+                        <button key={i} type="button" onClick={()=>{
+                          setAutoSelectTop10(false);
+                          setSelectedIdxs(prev => {
+                            const next = new Set(prev);
+                            if (next.has(i)) { next.delete(i); return next; }
+                            if (next.size >= 10) { alert('You can select up to 10 images.'); return next; }
+                            next.add(i); return next;
+                          });
+                        }} className={`relative border rounded overflow-hidden ${sel ? 'ring-2 ring-purple-600' : ''}`}>
+                          <img src={src} className="w-full h-56 object-cover" />
+                          <div className={`absolute top-1 left-1 text-xs px-1.5 py-0.5 rounded ${sel ? 'bg-purple-600 text-white' : 'bg-white/80 text-gray-700'}`}>{sel ? 'Selected' : 'Tap to select'}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="border rounded p-2">
+                  <div className="text-sm text-gray-600 mb-1">Caption</div>
+                  <textarea value={previewCaption} onChange={(e)=>setPreviewCaption(e.target.value)} className="w-full border rounded p-2 h-48" />
+                  <div className="text-xs text-gray-500 mt-1">You can edit the caption before posting. We'll post selected images (max 10).</div>
+                </div>
+              </div>
+            )}
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button onClick={() => setPreviewOpen(false)} className="px-3 py-2 rounded bg-gray-100">Cancel</button>
+              <button onClick={queuePost} disabled={previewLoading || posting || previewImages.length === 0} className="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-60">{posting ? 'Queuing…' : 'Queue Post'}</button>
+            </div>
+          </div>
+        </Dialog>
       </div>
   );
 }
