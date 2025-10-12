@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import authManager from '@/lib/auth';
-import { supabaseClient, initSupabaseSessionFromLocalStorage } from '@/lib/supabaseClient';
+import { supabaseClient as getSupabaseClient, initSupabaseSessionFromLocalStorage } from '@/lib/supabaseClient';
 
 type Ticket = {
   id: string;
@@ -70,7 +70,8 @@ export default function AdminTickets() {
     fetchTickets();
     // Prepare supabase session for realtime (uses anon key; RLS limits rows)
     initSupabaseSessionFromLocalStorage();
-    const subTickets = supabaseClient
+    const client = getSupabaseClient();
+    const subTickets = client
       .channel('adm-tickets')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, (payload: { eventType?: string }) => {
         fetchTickets();
@@ -80,7 +81,7 @@ export default function AdminTickets() {
       })
       .subscribe();
 
-    const subMessages = supabaseClient
+    const subMessages = client
       .channel('adm-messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, (payload: { new?: { ticket_id?: string, user_id?: string } }) => {
         if (activeTicket && payload.new && payload.new.ticket_id === activeTicket.id) {
@@ -96,8 +97,8 @@ export default function AdminTickets() {
       .subscribe();
 
     return () => {
-      supabaseClient.removeChannel(subTickets);
-      supabaseClient.removeChannel(subMessages);
+      client.removeChannel(subTickets);
+      client.removeChannel(subMessages);
     };
   }, [activeTicket?.id]);
 

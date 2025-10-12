@@ -36,8 +36,8 @@ export default function WhatsAppEmbeddedSignup({ userId, configId, onSuccess, on
   }, [onSuccess, onError]);
 
   const launchSignup = () => {
-    if (!(window as any).FB) {
-      alert('Facebook SDK not loaded yet. Please try again.');
+    if (!sdkReady || !(window as any).FB) {
+      alert('Facebook SDK not ready yet. Please wait a moment and try again.');
       return;
     }
     const state = userId ? JSON.stringify({ user_id: userId }) : undefined;
@@ -69,8 +69,8 @@ export default function WhatsAppEmbeddedSignup({ userId, configId, onSuccess, on
     <>
       <Script
         src="https://connect.facebook.net/en_US/sdk.js"
-        strategy="lazyOnload"
-        onReady={() => {
+        strategy="afterInteractive"
+        onLoad={() => {
           (window as any).fbAsyncInit = function () {
             (window as any).FB.init({
               appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
@@ -78,8 +78,10 @@ export default function WhatsAppEmbeddedSignup({ userId, configId, onSuccess, on
               xfbml: true,
               version: 'v19.0',
             });
+            console.log('FB SDK initialized');
             setSdkReady(true);
           };
+          // Trigger init if FB is already available
           if ((window as any).FB) {
             (window as any).fbAsyncInit();
           }

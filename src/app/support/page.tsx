@@ -3,7 +3,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { useEffect, useState } from "react";
 import authManager from "@/lib/auth";
-import { supabaseClient, initSupabaseSessionFromLocalStorage } from "@/lib/supabaseClient";
+import { supabaseClient as getSupabaseClient, initSupabaseSessionFromLocalStorage } from "@/lib/supabaseClient";
 
 interface Ticket {
   id: string;
@@ -54,14 +54,15 @@ export default function SupportPage() {
     fetchTickets();
     // init Supabase session for realtime
     initSupabaseSessionFromLocalStorage();
-    const subTickets = supabaseClient
+    const client = getSupabaseClient();
+    const subTickets = client
       .channel("client-tickets")
       .on("postgres_changes", { event: "*", schema: "public", table: "support_tickets" }, () => {
         fetchTickets();
       })
       .subscribe();
 
-    const subMessages = supabaseClient
+    const subMessages = client
       .channel("client-messages")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages" }, (payload: { new?: { ticket_id?: string, user_id?: string } }) => {
         if (activeTicket && payload.new && payload.new.ticket_id === activeTicket.id) {
@@ -76,8 +77,8 @@ export default function SupportPage() {
       .subscribe();
 
     return () => {
-      supabaseClient.removeChannel(subTickets);
-      supabaseClient.removeChannel(subMessages);
+      client.removeChannel(subTickets);
+      client.removeChannel(subMessages);
     };
   }, [activeTicket?.id]);
 
