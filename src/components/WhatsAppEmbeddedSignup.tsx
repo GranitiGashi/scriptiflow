@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Script from 'next/script';
 
 type Props = {
   userId?: string;
@@ -14,6 +13,34 @@ export default function WhatsAppEmbeddedSignup({ userId, configId, onSuccess, on
   const [sdkReady, setSdkReady] = useState(false);
 
   useEffect(() => {
+    // Initialize FB SDK once
+    if ((window as any).FB) {
+      setSdkReady(true);
+      return;
+    }
+
+    // Define fbAsyncInit before loading the SDK
+    (window as any).fbAsyncInit = function () {
+      (window as any).FB.init({
+        appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
+        autoLogAppEvents: true,
+        xfbml: true,
+        version: 'v19.0',
+      });
+      console.log('FB SDK initialized');
+      setSdkReady(true);
+    };
+
+    // Load SDK script
+    if (!document.getElementById('facebook-jssdk')) {
+      const script = document.createElement('script');
+      script.id = 'facebook-jssdk';
+      script.src = 'https://connect.facebook.net/en_US/sdk.js';
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+
     // Listen for WA_EMBEDDED_SIGNUP message event
     const handleMessage = (event: MessageEvent) => {
       if (!event.origin.endsWith('facebook.com')) return;
@@ -66,46 +93,13 @@ export default function WhatsAppEmbeddedSignup({ userId, configId, onSuccess, on
   };
 
   return (
-    <>
-      <Script
-        src="https://connect.facebook.net/en_US/sdk.js"
-        strategy="afterInteractive"
-        onLoad={() => {
-          (window as any).fbAsyncInit = function () {
-            (window as any).FB.init({
-              appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
-              autoLogAppEvents: true,
-              xfbml: true,
-              version: 'v19.0',
-            });
-            console.log('FB SDK init called');
-            // Poll getLoginStatus to ensure SDK is fully ready
-            const checkReady = () => {
-              if ((window as any).FB?.getLoginStatus) {
-                (window as any).FB.getLoginStatus(() => {
-                  console.log('FB SDK ready');
-                  setSdkReady(true);
-                });
-              } else {
-                setTimeout(checkReady, 100);
-              }
-            };
-            checkReady();
-          };
-          // Trigger init if FB is already available
-          if ((window as any).FB) {
-            (window as any).fbAsyncInit();
-          }
-        }}
-      />
-      <button
-        onClick={launchSignup}
-        disabled={!sdkReady}
-        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-60"
-      >
-        {sdkReady ? 'Connect WhatsApp (Embedded)' : 'Loading...'}
-      </button>
-    </>
+    <button
+      onClick={launchSignup}
+      disabled={!sdkReady}
+      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-60"
+    >
+      {sdkReady ? 'Connect WhatsApp (Embedded)' : 'Loading...'}
+    </button>
   );
 }
 
