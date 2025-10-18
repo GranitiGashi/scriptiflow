@@ -3,12 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import authManager from '@/lib/auth';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { Box, Button, Checkbox, FormControlLabel, TextField, Paper, Stack, Chip, InputAdornment } from '@mui/material';
+import { Box, Button, Checkbox, TextField, Paper, Stack, Chip, InputAdornment, Pagination } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+ 
 
 interface ContactRow {
   id: string;
@@ -196,10 +195,13 @@ export default function ContactsPage() {
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
           <Box sx={{ fontSize: 12, color: 'text.secondary' }}>Selected: {selectedIds.length}</Box>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Button size="small" variant="outlined" startIcon={<ChevronLeftIcon />} disabled={offset === 0 || loading} onClick={() => setOffset(Math.max(0, offset - limit))}>Prev</Button>
-            <Button size="small" variant="outlined" endIcon={<ChevronRightIcon />} disabled={rows.length < limit || loading} onClick={() => setOffset(offset + limit)}>Next</Button>
-          </Stack>
+          <Pagination
+            count={Math.max(1, Math.floor(offset / limit) + (rows.length === limit ? 2 : 1))}
+            page={Math.floor(offset / limit) + 1}
+            onChange={(_, p) => setOffset((p - 1) * limit)}
+            color="primary"
+            shape="rounded"
+          />
         </Box>
       </Box>
   );
