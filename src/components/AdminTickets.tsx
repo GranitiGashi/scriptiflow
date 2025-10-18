@@ -83,17 +83,26 @@ export default function AdminTickets() {
 
     const subMessages = client
       .channel('adm-messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages' }, (payload: { new?: { ticket_id?: string, user_id?: string } }) => {
-        if (activeTicket && payload.new && payload.new.ticket_id === activeTicket.id) {
-          // reload messages when current ticket gets a message
-          openTicket(activeTicket);
-          // play sound only if message is not from me
-          const me = (() => { try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; } })();
-          if (!me || (payload.new.user_id && payload.new.user_id !== me?.id)) {
-            playNotificationSound();
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_messages',
+          ...(activeTicket?.id ? { filter: `ticket_id=eq.${activeTicket.id}` } : {}),
+        },
+        (payload: { new?: { ticket_id?: string, user_id?: string } }) => {
+          if (activeTicket) {
+            // reload messages when current ticket gets a message
+            openTicket(activeTicket);
+            // play sound only if message is not from me
+            const me = (() => { try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; } })();
+            if (!me || (payload.new?.user_id && payload.new.user_id !== me?.id)) {
+              playNotificationSound();
+            }
           }
         }
-      })
+      )
       .subscribe();
 
     return () => {
