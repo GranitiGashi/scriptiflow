@@ -3,7 +3,7 @@
 import { hasTierOrAbove, getUserTier } from '@/lib/permissions';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Facebook as FacebookIcon, Instagram as InstagramIcon } from 'lucide-react';
+import { FaCar } from 'react-icons/fa';
 import authManager from '@/lib/auth';
 import { Dialog } from '@mui/material';
 
@@ -92,7 +92,7 @@ export default function InventoryPage() {
     checkConnection();
   }, [baseDomain, router]);
 
-  // Fetch cars
+  // Fetch cars after confirming connection and whenever search/sort changes
   useEffect(() => {
     if (!mobileDeConnected && !as24Connected) return;
 
@@ -271,6 +271,7 @@ export default function InventoryPage() {
     return () => { cancelled = true; };
   }, [mobileDeConnected, baseDomain, searchDraft.make, search.make]);
 
+  // Parse query params once
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -317,7 +318,7 @@ export default function InventoryPage() {
       setPreviewOpen(true);
       setPreviewLoading(true);
       setSelectedPlatforms({ facebook: true, instagram: true });
-
+      // 1) fetch images for this listing from server
       const detailsRes = await authManager.authenticatedFetch(`${baseDomain}/api/mobilede/ad-details?mobile_ad_id=${encodeURIComponent(car.id)}`, { headers: { Accept: 'application/json' } });
       let images: string[] = [];
       let make = car.make;
@@ -332,14 +333,77 @@ export default function InventoryPage() {
       }
       if (!images.length && car.image) images = [car.image];
       setPreviewImages(images);
-
+      // default selection: first 10
       const s = new Set<number>();
       for (let i = 0; i < Math.min(10, images.length); i++) s.add(i);
       setSelectedIdxs(s);
-
-      setPreviewCaption(`${make} ${model}\n\n${detail_url || ''}`);
+      setAutoSelectTop10(true);
+      // 2) generate caption
+      const capRes = await authManager.authenticatedFetch(`${baseDomain}/api/social/generate-caption`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ make, model, language: 'de' }),
+      });
+      if (capRes.ok) {
+        const c = await capRes.json();
+        setPreviewCaption(c?.caption || `${make} ${model}`);
+      } else {
+        setPreviewCaption(`${make} ${model}`);
+      }
+    } catch (_) {
+      setPreviewCaption(`${car.make} ${car.model}`);
+      if (!previewImages.length && car.image) setPreviewImages([car.image]);
     } finally {
       setPreviewLoading(false);
+    }
+  }
+
+  async function queuePost() {
+    if (!previewCar) return;
+    const images = Array.from(selectedIdxs)
+      .sort((a, b) => a - b)
+      .map((i) => previewImages[i])
+      .filter(Boolean)
+      .slice(0, 10);
+    if (images.length === 0) {
+      alert('Please select at least one image');
+      return;
+    }
+    const platforms: Array<'facebook' | 'instagram'> = [];
+    if (selectedPlatforms.facebook) platforms.push('facebook');
+    if (selectedPlatforms.instagram) platforms.push('instagram');
+    if (platforms.length === 0) {
+      alert('Select at least one platform');
+      return;
+    }
+    setPosting(true);
+    try {
+      for (const platform of platforms) {
+        const body = {
+          platform,
+          mobile_ad_id: previewCar.id,
+          images,
+          caption: previewCaption,
+          detail_url: previewCar.url,
+          make: previewCar.make,
+          model: previewCar.model,
+        };
+        const res = await authManager.authenticatedFetch(`${baseDomain}/api/social/queue-post`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error(e?.error || `Failed to queue ${platform}`);
+        }
+      }
+      alert(`Queued to post on ${platforms.join(' & ')}. It will be published shortly.`);
+      setPreviewOpen(false);
+    } catch (e: any) {
+      alert(e?.message || 'Failed to queue post');
+    } finally {
+      setPosting(false);
     }
   }
 
@@ -368,51 +432,65 @@ export default function InventoryPage() {
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="text-lg font-semibold">Social Post Preview</div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedPlatforms(p => ({ ...p, facebook: !p.facebook }))}
-                className={`p-2 rounded-full border transition ${selectedPlatforms.facebook ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
-                aria-pressed={selectedPlatforms.facebook}
-                aria-label="Facebook"
-                title="Facebook"
-              >
-                <FacebookIcon className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedPlatforms(p => ({ ...p, instagram: !p.instagram }))}
-                className={`p-2 rounded-full border transition ${selectedPlatforms.instagram ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-pink-500 border-gray-300'}`}
-                aria-pressed={selectedPlatforms.instagram}
-                aria-label="Instagram"
-                title="Instagram"
-              >
-                <InstagramIcon className="h-4 w-4" />
-              </button>
+            <div className="flex items-center gap-3 text-sm">
+              <label className="flex items-center gap-1"><input type="checkbox" checked={selectedPlatforms.facebook} onChange={(e)=>setSelectedPlatforms(p=>({ ...p, facebook: e.target.checked }))} /> Facebook</label>
+              <label className="flex items-center gap-1"><input type="checkbox" checked={selectedPlatforms.instagram} onChange={(e)=>setSelectedPlatforms(p=>({ ...p, instagram: e.target.checked }))} /> Instagram</label>
             </div>
           </div>
           {previewLoading ? (
-            <div>Loading preview...</div>
-          ) : previewCar ? (
-            <>
-              <h2 className="text-xl font-bold mb-2">{previewCar.make} {previewCar.model}</h2>
-              <p className="mb-2 whitespace-pre-wrap">{previewCaption}</p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {previewImages.map((img, idx) => (
-                  <img key={idx} src={img} className={`w-20 h-20 object-cover border ${selectedIdxs.has(idx) ? 'border-blue-600' : 'border-gray-300'}`} />
-                ))}
+            <div className="flex items-center justify-center h-40">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="border rounded p-2 bg-gray-50">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm text-gray-600">Images ({previewImages.length})</div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={autoSelectTop10} onChange={(e)=>{
+                      setAutoSelectTop10(e.target.checked);
+                      if (e.target.checked) {
+                        const s = new Set<number>();
+                        for (let i = 0; i < Math.min(10, previewImages.length); i++) s.add(i);
+                        setSelectedIdxs(s);
+                      }
+                    }} /> Auto-select top 10</label>
+                    <button className="px-2 py-1 bg-gray-200 rounded" onClick={()=>{ const s=new Set<number>(); for(let i=0;i<Math.min(10, previewImages.length); i++) s.add(i); setSelectedIdxs(s); setAutoSelectTop10(true); }}>Select 10</button>
+                    <button className="px-2 py-1 bg-gray-200 rounded" onClick={()=>{ setSelectedIdxs(new Set()); setAutoSelectTop10(false); }}>Clear</button>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-600 mb-2">Selected: {selectedIdxs.size} / 10</div>
+                <div className="grid grid-cols-2 gap-2 max-h-[600px] overflow-auto">
+                  {previewImages.map((src, i) => {
+                    const sel = selectedIdxs.has(i);
+                    return (
+                      <button key={i} type="button" onClick={()=>{
+                        setAutoSelectTop10(false);
+                        setSelectedIdxs(prev => {
+                          const next = new Set(prev);
+                          if (next.has(i)) { next.delete(i); return next; }
+                          if (next.size >= 10) { alert('You can select up to 10 images.'); return next; }
+                          next.add(i); return next;
+                        });
+                      }} className={`relative border rounded overflow-hidden ${sel ? 'ring-2 ring-purple-600' : ''}`}>
+                        <img src={src} className="w-full h-56 object-cover" />
+                        <div className={`absolute top-1 left-1 text-xs px-1.5 py-0.5 rounded ${sel ? 'bg-purple-600 text-white' : 'bg-white/80 text-gray-700'}`}>{sel ? 'Selected' : 'Tap to select'}</div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              
-
-              <button
-                disabled={posting}
-                onClick={() => alert('Posting not implemented yet')}
-                className="bg-green-600 text-white px-4 py-2 rounded"
-              >
-                {posting ? 'Posting...' : 'Post to Selected Platforms'}
-              </button>
-            </>
-          ) : null}
+              <div className="border rounded p-2">
+                <div className="text-sm text-gray-600 mb-1">Caption</div>
+                <textarea value={previewCaption} onChange={(e)=>setPreviewCaption(e.target.value)} className="w-full border rounded p-2 h-48" />
+                <div className="text-xs text-gray-500 mt-1">You can edit the caption before posting. We'll post selected images (max 10).</div>
+              </div>
+            </div>
+          )}
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <button onClick={() => setPreviewOpen(false)} className="px-3 py-2 rounded bg-gray-100">Cancel</button>
+            <button onClick={queuePost} disabled={previewLoading || posting || previewImages.length === 0} className="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-60">{posting ? 'Queuing…' : 'Queue Post'}</button>
+          </div>
         </div>
       </Dialog>
     </div>
