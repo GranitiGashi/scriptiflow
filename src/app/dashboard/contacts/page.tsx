@@ -116,117 +116,264 @@ export default function ContactsPage() {
     } finally { setLoading(false); }
   };
 
-  const totalActive = rows.filter(r => !r.deleted_at).length;
-  const totalDeleted = rows.filter(r => r.deleted_at).length;
-
   const columns: GridColDef<ContactRow>[] = [
     { field: 'select', headerName: '', width: 50, sortable: false, filterable: false,
       renderHeader: () => <Checkbox checked={rows.length > 0 && selectedIds.length === rows.length} onChange={(e) => toggleAll(e.target.checked)} />,
       renderCell: (params) => <Checkbox checked={!!selected[params.row.id]} onChange={(e) => setSelected(s => ({ ...s, [params.row.id]: e.target.checked }))} />
     },
-    { field: 'name', headerName: 'Name', flex: 1, valueGetter: (p) => [p.row.first_name, p.row.last_name].filter(Boolean).join(' ') || '—' },
-    { field: 'email', headerName: 'Email', flex: 1 },
-    { field: 'phone', headerName: 'Phone', flex: 1 },
+    { 
+      field: 'name', 
+      headerName: 'Name', 
+      flex: 1, 
+      editable: true,
+      valueGetter: (p) => [p.row.first_name, p.row.last_name].filter(Boolean).join(' ') || '—',
+      valueSetter: (params) => {
+        const value = params.value;
+        const parts = String(value || '').trim().split(' ');
+        return { 
+          ...params.row, 
+          first_name: parts[0] || '', 
+          last_name: parts.slice(1).join(' ') || '' 
+        };
+      }
+    },
+    { 
+      field: 'email', 
+      headerName: 'Email', 
+      flex: 1, 
+      editable: true 
+    },
+    { 
+      field: 'phone', 
+      headerName: 'Phone', 
+      flex: 1, 
+      editable: true 
+    },
     { field: 'source', headerName: 'Source', width: 140 },
     { field: 'created_at', headerName: 'Created', width: 140, valueGetter: (p) => new Date(p.row.created_at).toLocaleDateString() },
-    { field: 'status', headerName: 'Status', width: 120,
-      renderCell: (params) => <Chip label={params.row.deleted_at ? 'Deleted' : 'Active'} color={params.row.deleted_at ? 'error' : 'success'} size="small" variant="filled" />
-    },
   ];
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f0f4f8', p: { xs: 2, md: 4 } }}>
-
-      {/* Summary Cards */}
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} mb={4}>
-        <Paper sx={{ flex: 1, p: 3, borderRadius: 2, bgcolor: '#1976d2', color: 'white', boxShadow: 4 }}>
-          <Typography variant="h6">Total Contacts</Typography>
-          <Typography variant="h4">{rows.length}</Typography>
-        </Paper>
-        <Paper sx={{ flex: 1, p: 3, borderRadius: 2, bgcolor: '#2e7d32', color: 'white', boxShadow: 4 }}>
-          <Typography variant="h6">Active</Typography>
-          <Typography variant="h4">{totalActive}</Typography>
-        </Paper>
-        <Paper sx={{ flex: 1, p: 3, borderRadius: 2, bgcolor: '#d32f2f', color: 'white', boxShadow: 4 }}>
-          <Typography variant="h6">Deleted</Typography>
-          <Typography variant="h4">{totalDeleted}</Typography>
-        </Paper>
-      </Stack>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#fafbfc', p: { xs: 2, md: 4 }, maxWidth: '1400px', mx: 'auto' }}>
 
       {/* Header + Actions */}
-      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} mb={3}>
-        <Box>
-          <Typography variant="h4" fontWeight={700} color="primary">Contacts</Typography>
-          <Typography variant="body2" color="text.secondary">Search, filter, export, and manage your contacts efficiently.</Typography>
-        </Box>
-        <Stack direction="row" spacing={1} mt={{ xs: 1, md: 0 }}>
-          <Button variant="outlined" startIcon={<DownloadIcon />} color="secondary" onClick={exportCsv}>Export CSV</Button>
-          <Button variant="contained" startIcon={<DeleteIcon />} color="error" disabled={selectedIds.length === 0 || loading} onClick={bulkDelete}>Delete selected</Button>
+      <Box sx={{ mb: 4 }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2}>
+          <Box>
+            <Typography variant="h4" fontWeight={700} sx={{ color: '#1a1a1a', mb: 0.5 }}>
+              Contacts <Box component="span" sx={{ color: '#666', fontWeight: 400, fontSize: '1.5rem' }}>({rows.length})</Box>
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#666' }}>Manage and organize your contacts</Typography>
+          </Box>
+          <Stack direction="row" spacing={1.5}>
+            <Button 
+              variant="outlined" 
+              startIcon={<DownloadIcon />} 
+              onClick={exportCsv}
+              sx={{ 
+                borderColor: '#ddd', 
+                color: '#555',
+                '&:hover': { borderColor: '#999', bgcolor: '#f5f5f5' }
+              }}
+            >
+              Export
+            </Button>
+            <Button 
+              variant="contained" 
+              startIcon={<DeleteIcon />} 
+              disabled={selectedIds.length === 0 || loading} 
+              onClick={bulkDelete}
+              sx={{ 
+                bgcolor: '#dc3545',
+                '&:hover': { bgcolor: '#c82333' },
+                '&:disabled': { bgcolor: '#e0e0e0' }
+              }}
+            >
+              Delete ({selectedIds.length})
+            </Button>
+          </Stack>
         </Stack>
-      </Stack>
+      </Box>
 
       {/* Filters */}
-      <Paper sx={{ p: 3, mb: 3, borderRadius: 2, boxShadow: 3, bgcolor: '#ffffff', position: 'sticky', top: 0, zIndex: 10 }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
-          <TextField
-            size="small"
-            placeholder="Search name, email, or phone"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            fullWidth
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" color="action" />
-                </InputAdornment>
-              )
-            }}
-          />
-          <TextField
-            size="small"
-            label="Source"
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
-            placeholder="gmail/outlook/whatsapp"
-          />
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-            <Chip label="Has email" clickable variant={hasEmail ? 'filled' : 'outlined'} color={hasEmail ? 'primary' : 'default'} onClick={() => setHasEmail(!hasEmail)} />
-            <Chip label="Has phone" clickable variant={hasPhone ? 'filled' : 'outlined'} color={hasPhone ? 'primary' : 'default'} onClick={() => setHasPhone(!hasPhone)} />
-            <Button size="small" onClick={() => { setQ(''); setDebouncedQ(''); setSource(''); setHasEmail(false); setHasPhone(false); setOffset(0); }}>Reset</Button>
+      <Paper sx={{ p: 2.5, mb: 3, borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', bgcolor: '#ffffff', border: '1px solid #e5e7eb' }}>
+        <Stack spacing={2}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+            <Box sx={{ flex: 1 }}>
+              <TextField
+                size="small"
+                placeholder="Search by name, email, or phone..."
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                fullWidth
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" sx={{ color: '#999' }} />
+                    </InputAdornment>
+                  )
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: '#fafafa',
+                    '&:hover': { bgcolor: '#f5f5f5' },
+                    '&.Mui-focused': { bgcolor: '#fff' }
+                  }
+                }}
+              />
+            </Box>
+            <Box sx={{ minWidth: { xs: '100%', md: '200px' } }}>
+              <TextField
+                size="small"
+                label="Source"
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                placeholder="gmail/outlook/whatsapp"
+                fullWidth
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: '#fafafa',
+                    '&:hover': { bgcolor: '#f5f5f5' },
+                    '&.Mui-focused': { bgcolor: '#fff' }
+                  }
+                }}
+              />
+            </Box>
+          </Stack>
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ gap: 1 }}>
+            <Typography variant="body2" sx={{ color: '#666', mr: 1 }}>Filters:</Typography>
+            <Chip 
+              label="Has Email" 
+              clickable 
+              variant={hasEmail ? 'filled' : 'outlined'} 
+              color={hasEmail ? 'primary' : 'default'} 
+              onClick={() => setHasEmail(!hasEmail)}
+              size="small"
+            />
+            <Chip 
+              label="Has Phone" 
+              clickable 
+              variant={hasPhone ? 'filled' : 'outlined'} 
+              color={hasPhone ? 'primary' : 'default'} 
+              onClick={() => setHasPhone(!hasPhone)}
+              size="small"
+            />
+            <Button 
+              size="small" 
+              variant="text"
+              onClick={() => { setQ(''); setDebouncedQ(''); setSource(''); setHasEmail(false); setHasPhone(false); setOffset(0); }}
+              sx={{ ml: 'auto', color: '#666', textTransform: 'none' }}
+            >
+              Clear all
+            </Button>
           </Stack>
         </Stack>
       </Paper>
 
       {/* Data Grid */}
-      <Paper sx={{ height: 600, width: '100%', borderRadius: 2, boxShadow: 3, overflow: 'hidden' }}>
+      <Paper sx={{ width: '100%', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
         <DataGrid
           rows={rows}
           columns={columns}
           getRowId={(r) => r.id}
           loading={loading}
           disableRowSelectionOnClick
-          onRowClick={(p) => { window.location.href = `/dashboard/contacts/${p.row.id}`; }}
+          processRowUpdate={(newRow, oldRow) => {
+            // Check for changes in first_name, last_name (from name field), email, or phone
+            let updatePayload: any = {};
+            let hasChanges = false;
+
+            if (newRow.first_name !== oldRow.first_name) {
+              updatePayload.first_name = newRow.first_name;
+              hasChanges = true;
+            }
+            if (newRow.last_name !== oldRow.last_name) {
+              updatePayload.last_name = newRow.last_name;
+              hasChanges = true;
+            }
+            if (newRow.email !== oldRow.email) {
+              updatePayload.email = newRow.email;
+              hasChanges = true;
+            }
+            if (newRow.phone !== oldRow.phone) {
+              updatePayload.phone = newRow.phone;
+              hasChanges = true;
+            }
+
+            if (hasChanges) {
+              // Send update to server
+              authManager.authenticatedFetch(`${baseDomain}/api/contacts/${newRow.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatePayload),
+              }).then(res => {
+                if (!res.ok) {
+                  res.json().then(err => alert(err.error || 'Update failed')).catch(() => alert('Update failed'));
+                  fetchData(); // Revert to server state
+                }
+              }).catch(() => {
+                alert('Failed to update contact');
+                fetchData(); // Revert to server state
+              });
+            }
+
+            return newRow;
+          }}
+          onProcessRowUpdateError={(error) => {
+            console.error('Row update error:', error);
+          }}
           paginationModel={{ page: Math.floor(offset / limit), pageSize: limit }}
           pageSizeOptions={[limit]}
           hideFooterPagination
+          autoHeight
           sx={{
-            '& .MuiDataGrid-columnHeaders': { bgcolor: '#bbdefb', fontWeight: 600 },
-            '& .MuiDataGrid-row:nth-of-type(odd)': { bgcolor: '#f5f7fa' },
-            '& .MuiDataGrid-row:hover': { bgcolor: '#e3f2fd', cursor: 'pointer' },
-            '& .MuiDataGrid-cell': { py: 1 },
+            border: 'none',
+            '& .MuiDataGrid-columnHeaders': { 
+              bgcolor: '#f8f9fa', 
+              fontWeight: 600,
+              fontSize: '0.875rem',
+              color: '#374151',
+              borderBottom: '2px solid #e5e7eb'
+            },
+            '& .MuiDataGrid-row': {
+              '&:nth-of-type(even)': { bgcolor: '#fafafa' },
+              '&:hover': { bgcolor: '#f0f7ff !important' },
+            },
+            '& .MuiDataGrid-cell': { 
+              py: 2,
+              fontSize: '0.875rem',
+              color: '#4b5563',
+              borderBottom: '1px solid #f3f4f6'
+            },
+            '& .MuiDataGrid-cell--editable': {
+              cursor: 'text',
+              '&:hover': {
+                bgcolor: '#fffbeb !important',
+                outline: '1px solid #fbbf24'
+              }
+            },
+            '& .MuiDataGrid-footerContainer': { display: 'none' }
           }}
         />
       </Paper>
 
       {/* Footer */}
-      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems="center" mt={2}>
-        <Typography variant="body2" color="text.secondary">Selected: {selectedIds.length}</Typography>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mt={3} spacing={2}>
+        <Typography variant="body2" sx={{ color: '#666' }}>
+          {selectedIds.length > 0 ? `${selectedIds.length} contact(s) selected` : 'No contacts selected'}
+        </Typography>
         <Pagination
           count={Math.max(1, Math.floor(offset / limit) + (rows.length === limit ? 2 : 1))}
           page={Math.floor(offset / limit) + 1}
           onChange={(_, p) => setOffset((p - 1) * limit)}
           color="primary"
           shape="rounded"
+          size="medium"
+          sx={{
+            '& .MuiPaginationItem-root': {
+              fontWeight: 500
+            }
+          }}
         />
       </Stack>
     </Box>
