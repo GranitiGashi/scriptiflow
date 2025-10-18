@@ -11,6 +11,7 @@ type Ticket = {
   message: string;
   status: string;
   created_at: string;
+  unread_count?: number;
   users_app?: { full_name?: string | null; email?: string | null };
 };
 
@@ -37,13 +38,14 @@ export default function AdminSupportPage() {
   useEffect(() => { load(); }, []);
 
   const grouped = useMemo(() => {
-    const map: Record<string, { user_id: string; name: string; email: string; tickets: Ticket[] }> = {};
+    const map: Record<string, { user_id: string; name: string; email: string; tickets: Ticket[]; unreadTotal: number }> = {};
     for (const t of tickets) {
       const key = t.user_id;
       const name = t.users_app?.full_name || 'Unknown';
       const email = t.users_app?.email || '';
-      if (!map[key]) map[key] = { user_id: key, name, email, tickets: [] };
+      if (!map[key]) map[key] = { user_id: key, name, email, tickets: [], unreadTotal: 0 };
       map[key].tickets.push(t);
+      map[key].unreadTotal += t.unread_count || 0;
     }
     return Object.values(map).sort((a, b) => a.name.localeCompare(b.name));
   }, [tickets]);
@@ -62,11 +64,18 @@ export default function AdminSupportPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {grouped.map(group => (
-            <div key={group.user_id} className="border rounded-xl p-4 bg-white">
+            <div key={group.user_id} className="border rounded-xl p-4 bg-white relative">
               <div className="flex items-center justify-between mb-2">
-                <div>
-                  <div className="font-semibold text-gray-800">{group.name}</div>
-                  <div className="text-xs text-gray-500">{group.email}</div>
+                <div className="flex items-center gap-2">
+                  <div>
+                    <div className="font-semibold text-gray-800">{group.name}</div>
+                    <div className="text-xs text-gray-500">{group.email}</div>
+                  </div>
+                  {group.unreadTotal > 0 && (
+                    <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full">
+                      {group.unreadTotal}
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs text-gray-500">{group.tickets.length} tickets</span>
               </div>
@@ -74,12 +83,19 @@ export default function AdminSupportPage() {
                 {group.tickets.map(t => (
                   <li key={t.id} className="py-2">
                     <div className="flex items-start justify-between">
-                      <div className="pr-3">
-                        <div className="font-medium text-gray-800">{t.subject}</div>
-                        <div className="text-xs text-gray-500">{new Date(t.created_at).toLocaleString()}</div>
-                        <div className="text-sm text-gray-600 line-clamp-2">{t.message}</div>
+                      <div className="pr-3 flex items-start gap-2">
+                        <div>
+                          <div className="font-medium text-gray-800">{t.subject}</div>
+                          <div className="text-xs text-gray-500">{new Date(t.created_at).toLocaleString()}</div>
+                          <div className="text-sm text-gray-600 line-clamp-2">{t.message}</div>
+                        </div>
+                        {(t.unread_count || 0) > 0 && (
+                          <span className="flex-shrink-0 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                            {t.unread_count}
+                          </span>
+                        )}
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded ${t.status === 'open' ? 'bg-yellow-100 text-yellow-800' : t.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>{t.status}</span>
+                      <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded ${t.status === 'open' ? 'bg-yellow-100 text-yellow-800' : t.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>{t.status}</span>
                     </div>
                   </li>
                 ))}

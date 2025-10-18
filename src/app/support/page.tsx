@@ -1,7 +1,7 @@
 "use client";
 
 import DashboardLayout from "@/components/DashboardLayout";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import authManager from "@/lib/auth";
 import { supabaseClient as getSupabaseClient, initSupabaseSessionFromLocalStorage } from "@/lib/supabaseClient";
 
@@ -11,6 +11,7 @@ interface Ticket {
   message: string;
   status: string;
   created_at: string;
+  unread_count?: number;
 }
 
 interface Message {
@@ -18,6 +19,7 @@ interface Message {
   user_id: string;
   message: string;
   created_at: string;
+  attachments?: Array<{ name: string; mime: string; size: number; url: string; path: string }> | null;
 }
 
 export default function SupportPage() {
@@ -32,6 +34,7 @@ export default function SupportPage() {
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   function playNotificationSound() {
     try {
@@ -142,19 +145,26 @@ export default function SupportPage() {
       if (res.ok) {
         const data: Message[] = await res.json();
         setChatMessages(data);
+        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
       }
     } catch {}
   }
 
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages]);
+
   async function sendChat(e: React.FormEvent) {
     e.preventDefault();
-    if (!activeTicket || !chatInput.trim()) return;
+    if (!activeTicket || (!chatInput.trim() && files.length === 0)) return;
     try {
       const token = localStorage.getItem('access_token');
       const refresh = localStorage.getItem('refresh_token');
       const fd = new FormData();
       fd.set('ticket_id', activeTicket.id);
-      fd.set('message', chatInput);
+      fd.set('message', chatInput || '(attachment)');
       for (const f of files.slice(0,5)) fd.append('files', f);
       const res = await fetch(`${baseDomain}/api/support/messages`, {
         method: 'POST',
@@ -224,60 +234,115 @@ export default function SupportPage() {
             <div className="text-gray-600">No tickets yet.</div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <ul className="divide-y divide-gray-200">
-                {tickets.map((t) => (
-                  <li key={t.id} className={`py-3 ${activeTicket?.id === t.id ? 'bg-blue-50 rounded-lg px-3 -mx-3' : ''}`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900">{t.subject}</p>
-                        <p className="text-sm text-gray-600 line-clamp-2">{t.message}</p>
+              <div className="border rounded-lg p-4 max-h-[600px] overflow-auto">
+                <ul className="divide-y divide-gray-200">
+                  {tickets.map((t) => (
+                    <li key={t.id} className={`py-3 ${activeTicket?.id === t.id ? 'bg-blue-50 rounded-lg px-3 -mx-3' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <p className="font-medium text-gray-900">{t.subject}</p>
+                            <p className="text-sm text-gray-600 line-clamp-2">{t.message}</p>
+                          </div>
+                          {(t.unread_count || 0) > 0 && (
+                            <span className="flex-shrink-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                              {t.unread_count}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-xs px-2 py-1 rounded ${t.status === 'open' ? 'bg-yellow-100 text-yellow-800' : t.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>{t.status}</span>
+                          <div className="text-xs text-gray-500 mt-1">{new Date(t.created_at).toLocaleString()}</div>
+                          <button onClick={() => openChat(t)} className="mt-2 text-xs text-blue-600 hover:text-blue-700">Open Chat</button>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className={`text-xs px-2 py-1 rounded ${t.status === 'open' ? 'bg-yellow-100 text-yellow-800' : t.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>{t.status}</span>
-                        <div className="text-xs text-gray-500 mt-1">{new Date(t.created_at).toLocaleString()}</div>
-                        <button onClick={() => openChat(t)} className="mt-2 text-xs text-blue-600 hover:text-blue-700">Open Chat</button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <div className="border rounded-lg p-4 h-full min-h-64">
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="border rounded-lg p-4 h-[600px] flex flex-col">
                 {activeTicket ? (
-                  <div className="flex flex-col h-full">
-                    <div className="mb-2">
-                      <h3 className="font-semibold text-gray-800">Chat for: {activeTicket.subject}</h3>
+                  <>
+                    <div className="mb-3 pb-3 border-b">
+                      <h3 className="font-semibold text-gray-800">{activeTicket.subject}</h3>
                       <div className="text-xs text-gray-500">Created {new Date(activeTicket.created_at).toLocaleString()}</div>
                     </div>
-                    <div className="flex-1 overflow-auto space-y-3 pr-1">
-                      {chatMessages.map((m) => (
-                        <div key={m.id} className="bg-gray-50 rounded p-2">
-                          <div className="text-sm text-gray-800 whitespace-pre-line">{m.message}</div>
-                          <div className="text-[11px] text-gray-500 mt-1">{new Date(m.created_at).toLocaleString()}</div>
-                        </div>
-                      ))}
+                    <div className="flex-1 overflow-auto space-y-3 pr-2 mb-3">
+                      {chatMessages.map((m) => {
+                        const me = (() => { try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; } })();
+                        const isMe = me && m.user_id === me.id;
+                        return (
+                          <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[75%] rounded-lg px-3 py-2 ${isMe ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
+                              {m.message !== '(attachment)' && (
+                                <div className="text-sm whitespace-pre-line break-words">{m.message}</div>
+                              )}
+                              {m.attachments && m.attachments.length > 0 && (
+                                <div className={m.message !== '(attachment)' ? 'mt-2 space-y-2' : 'space-y-2'}>
+                                  {m.attachments.map((att, idx) => {
+                                    const isImage = att.mime.startsWith('image/');
+                                    return (
+                                      <div key={idx}>
+                                        {isImage ? (
+                                          <a href={att.url} target="_blank" rel="noopener noreferrer">
+                                            <img src={att.url} alt={att.name} className="max-w-full rounded border border-white/20" />
+                                          </a>
+                                        ) : (
+                                          <a href={att.url} target="_blank" rel="noopener noreferrer" className={`text-xs underline ${isMe ? 'text-blue-100' : 'text-blue-600'}`}>
+                                            📎 {att.name} ({(att.size / 1024).toFixed(1)} KB)
+                                          </a>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              <div className={`text-[10px] mt-1 ${isMe ? 'text-blue-100' : 'text-gray-500'}`}>{new Date(m.created_at).toLocaleString()}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
                       {chatMessages.length === 0 && (
                         <div className="text-sm text-gray-500">No messages yet.</div>
                       )}
+                      <div ref={chatEndRef} />
                     </div>
-                    <form onSubmit={sendChat} className="mt-3 flex gap-2 items-center">
-                      <input
-                        value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
-                        placeholder="Type a message..."
-                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
-                      />
-                      <label className="px-3 py-2 border rounded-lg cursor-pointer text-sm text-gray-700 bg-gray-50 hover:bg-gray-100">
-                        Attach
-                        <input type="file" multiple className="hidden" onChange={(e)=> setFiles(Array.from(e.target.files || []))} />
-                      </label>
-                      {files.length>0 && (
-                        <span className="text-xs text-gray-500">{files.length} file{files.length>1?'s':''}</span>
+                    <div className="pt-3 border-t">
+                      {files.length > 0 && (
+                        <div className="mb-2 flex flex-wrap gap-2">
+                          {files.map((file, idx) => {
+                            const isImage = file.type.startsWith('image/');
+                            const preview = isImage ? URL.createObjectURL(file) : null;
+                            return (
+                              <div key={idx} className="relative bg-gray-100 rounded p-1">
+                                {isImage && preview ? (
+                                  <img src={preview} alt={file.name} className="h-16 w-16 object-cover rounded" />
+                                ) : (
+                                  <div className="h-16 w-16 flex items-center justify-center text-2xl">📎</div>
+                                )}
+                                <button type="button" onClick={() => setFiles(files.filter((_, i) => i !== idx))} className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-700">×</button>
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
-                      <button type="submit" className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Send</button>
-                    </form>
-                  </div>
+                      <form onSubmit={sendChat} className="flex gap-2 items-center">
+                        <input
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          placeholder="Type a message..."
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        />
+                        <label className="px-3 py-2 border rounded-lg cursor-pointer text-sm text-gray-700 bg-gray-50 hover:bg-gray-100">
+                          📎
+                          <input type="file" multiple className="hidden" onChange={(e)=> setFiles(Array.from(e.target.files || []))} />
+                        </label>
+                        <button type="submit" disabled={!chatInput.trim() && files.length === 0} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm">Send</button>
+                      </form>
+                    </div>
+                  </>
                 ) : (
-                  <div className="text-gray-600">Select a ticket to chat.</div>
+                  <div className="flex items-center justify-center h-full text-gray-500">Select a ticket to start chatting</div>
                 )}
               </div>
             </div>
