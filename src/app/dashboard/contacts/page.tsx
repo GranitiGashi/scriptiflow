@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import authManager from '@/lib/auth';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { Box, Button, Checkbox, FormControlLabel, MenuItem, Select, TextField } from '@mui/material';
+import { Box, Button, Checkbox, FormControlLabel, TextField, Paper, Stack, Chip, InputAdornment } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import DownloadIcon from '@mui/icons-material/Download';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 interface ContactRow {
   id: string;
@@ -28,7 +33,7 @@ export default function ContactsPage() {
   const [hasEmail, setHasEmail] = useState(false);
   const [hasPhone, setHasPhone] = useState(false);
   
-  const [limit, setLimit] = useState(50);
+  const [limit, setLimit] = useState(25);
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   
@@ -147,23 +152,32 @@ export default function ContactsPage() {
             <Box sx={{ fontSize: 12, color: 'text.secondary' }}>Search, filter, export and bulk-manage your contacts.</Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button variant="outlined" onClick={exportCsv}>Export CSV</Button>
-            <Button variant="contained" color="error" onClick={bulkDelete} disabled={selectedIds.length === 0 || loading}>Delete selected</Button>
+            <Button variant="outlined" startIcon={<DownloadIcon />} onClick={exportCsv}>Export CSV</Button>
+            <Button variant="contained" startIcon={<DeleteIcon />} color="error" onClick={bulkDelete} disabled={selectedIds.length === 0 || loading}>Delete selected</Button>
           </Box>
         </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1fr 1fr 1fr 1fr' }, gap: 1, bgcolor: 'white', p: 2, borderRadius: 1, mb: 2, boxShadow: 1 }}>
-          <TextField size="small" label="Search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, email, phone" />
-          <TextField size="small" label="Source" value={source} onChange={(e) => setSource(e.target.value)} placeholder="gmail/outlook/whatsapp" />
-          <FormControlLabel control={<Checkbox checked={hasEmail} onChange={(e) => setHasEmail(e.target.checked)} />} label="Has email" />
-          <FormControlLabel control={<Checkbox checked={hasPhone} onChange={(e) => setHasPhone(e.target.checked)} />} label="Has phone" />
-          
-          <Select size="small" value={limit} onChange={(e) => { setOffset(0); setLimit(Number(e.target.value)); }}>
-            <MenuItem value={25}>25</MenuItem>
-            <MenuItem value={50}>50</MenuItem>
-            <MenuItem value={100}>100</MenuItem>
-          </Select>
-        </Box>
+        <Paper sx={{ p: 2, borderRadius: 1, mb: 2, boxShadow: 1 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ xs: 'stretch', md: 'center' }}>
+            <TextField
+              size="small"
+              placeholder="Search name, email, or phone"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              InputProps={{ startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ) }}
+            />
+            <TextField size="small" label="Source" value={source} onChange={(e) => setSource(e.target.value)} placeholder="gmail/outlook/whatsapp" />
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Chip label="Has email" clickable variant={hasEmail ? 'filled' : 'outlined'} color={hasEmail ? 'primary' : 'default'} onClick={() => setHasEmail(!hasEmail)} />
+              <Chip label="Has phone" clickable variant={hasPhone ? 'filled' : 'outlined'} color={hasPhone ? 'primary' : 'default'} onClick={() => setHasPhone(!hasPhone)} />
+              <Button size="small" onClick={() => { setQ(''); setDebouncedQ(''); setSource(''); setHasEmail(false); setHasPhone(false); setOffset(0); }}>Reset</Button>
+            </Stack>
+          </Stack>
+        </Paper>
 
         <Box sx={{ height: 600, width: '100%', bgcolor: 'white', borderRadius: 1, boxShadow: 1 }}>
           <DataGrid
@@ -174,12 +188,18 @@ export default function ContactsPage() {
             disableRowSelectionOnClick
             onRowClick={(p) => { window.location.href = `/dashboard/contacts/${p.row.id}`; }}
             paginationModel={{ page: Math.floor(offset / limit), pageSize: limit }}
-            onPaginationModelChange={(m) => { setLimit(m.pageSize); setOffset(m.page * m.pageSize); }}
+            pageSizeOptions={[limit]}
+            hideFooterPagination
+            sx={{ '& .MuiDataGrid-columnHeaders': { bgcolor: '#f3f4f6' }, '& .MuiDataGrid-row:hover': { bgcolor: '#f9fafb' } }}
           />
         </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
           <Box sx={{ fontSize: 12, color: 'text.secondary' }}>Selected: {selectedIds.length}</Box>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button size="small" variant="outlined" startIcon={<ChevronLeftIcon />} disabled={offset === 0 || loading} onClick={() => setOffset(Math.max(0, offset - limit))}>Prev</Button>
+            <Button size="small" variant="outlined" endIcon={<ChevronRightIcon />} disabled={rows.length < limit || loading} onClick={() => setOffset(offset + limit)}>Next</Button>
+          </Stack>
         </Box>
       </Box>
   );
