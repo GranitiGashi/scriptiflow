@@ -31,6 +31,7 @@ export default function SupportPage() {
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [chatInput, setChatInput] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
 
   function playNotificationSound() {
     try {
@@ -149,13 +150,20 @@ export default function SupportPage() {
     e.preventDefault();
     if (!activeTicket || !chatInput.trim()) return;
     try {
-      const res = await authManager.authenticatedFetch(`${baseDomain}/api/support/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ ticket_id: activeTicket.id, message: chatInput }),
+      const token = localStorage.getItem('access_token');
+      const refresh = localStorage.getItem('refresh_token');
+      const fd = new FormData();
+      fd.set('ticket_id', activeTicket.id);
+      fd.set('message', chatInput);
+      for (const f of files.slice(0,5)) fd.append('files', f);
+      const res = await fetch(`${baseDomain}/api/support/messages`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'x-refresh-token': refresh || '' },
+        body: fd,
       });
       if (res.ok) {
         setChatInput("");
+        setFiles([]);
         await openChat(activeTicket);
       }
     } catch {}
@@ -251,13 +259,20 @@ export default function SupportPage() {
                         <div className="text-sm text-gray-500">No messages yet.</div>
                       )}
                     </div>
-                    <form onSubmit={sendChat} className="mt-3 flex gap-2">
+                    <form onSubmit={sendChat} className="mt-3 flex gap-2 items-center">
                       <input
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         placeholder="Type a message..."
                         className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
                       />
+                      <label className="px-3 py-2 border rounded-lg cursor-pointer text-sm text-gray-700 bg-gray-50 hover:bg-gray-100">
+                        Attach
+                        <input type="file" multiple className="hidden" onChange={(e)=> setFiles(Array.from(e.target.files || []))} />
+                      </label>
+                      {files.length>0 && (
+                        <span className="text-xs text-gray-500">{files.length} file{files.length>1?'s':''}</span>
+                      )}
                       <button type="submit" className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Send</button>
                     </form>
                   </div>

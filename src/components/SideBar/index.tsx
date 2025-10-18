@@ -58,6 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       { name: "Admin Dashboard", path: "/dashboard/admin", icon: "fas fa-crown" },
       { name: "Add Apps", path: "/dashboard/admin/apps", icon: "fas fa-cubes" },
       { name: "Register", path: "/Admin/register/", icon: "fas fa-users" },
+      { name: "Support (Admin)", path: "/dashboard/admin/support", icon: "fas fa-headset" },
     ],
     client: (
       () => {

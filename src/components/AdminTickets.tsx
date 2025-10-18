@@ -28,6 +28,7 @@ export default function AdminTickets() {
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [reply, setReply] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   function playNotificationSound() {
@@ -130,13 +131,20 @@ export default function AdminTickets() {
     e.preventDefault();
     if (!activeTicket || !reply.trim()) return;
     try {
-      const res = await authManager.authenticatedFetch(`${baseDomain}/api/support/messages`, {
+      const token = localStorage.getItem('access_token');
+      const refresh = localStorage.getItem('refresh_token');
+      const fd = new FormData();
+      fd.set('ticket_id', activeTicket.id);
+      fd.set('message', reply);
+      for (const f of files.slice(0,5)) fd.append('files', f);
+      const res = await fetch(`${baseDomain}/api/support/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ ticket_id: activeTicket.id, message: reply }),
+        headers: { 'Authorization': `Bearer ${token}`, 'x-refresh-token': refresh || '' },
+        body: fd,
       });
       if (res.ok) {
         setReply('');
+        setFiles([]);
         await openTicket(activeTicket);
       }
     } catch {}
@@ -222,13 +230,20 @@ export default function AdminTickets() {
                     <div className="text-sm text-gray-500">No messages yet.</div>
                   )}
                 </div>
-                <form onSubmit={sendReply} className="mt-3 flex gap-2">
+                <form onSubmit={sendReply} className="mt-3 flex gap-2 items-center">
                   <input
                     value={reply}
                     onChange={(e) => setReply(e.target.value)}
                     placeholder="Type a reply..."
                     className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
                   />
+                  <label className="px-3 py-2 border rounded-lg cursor-pointer text-sm text-gray-700 bg-gray-50 hover:bg-gray-100">
+                    Attach
+                    <input type="file" multiple className="hidden" onChange={(e)=> setFiles(Array.from(e.target.files || []))} />
+                  </label>
+                  {files.length>0 && (
+                    <span className="text-xs text-gray-500">{files.length} file{files.length>1?'s':''}</span>
+                  )}
                   <button type="submit" className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Send</button>
                 </form>
               </div>
