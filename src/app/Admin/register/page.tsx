@@ -2,6 +2,7 @@
 
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 interface SimpleFormData {
   email: string;
@@ -30,6 +31,7 @@ const RegisterForm: React.FC = () => {
   const [tokenChecked, setTokenChecked] = useState(false);
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080'
   const [inviteMode, setInviteMode] = useState<boolean>(true);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     const role = localStorage.getItem("role");
@@ -152,15 +154,24 @@ const RegisterForm: React.FC = () => {
               className="w-full p-3 rounded-lg bg-[#1e253f] border border-purple-600 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
             {!inviteMode && (
-              <input
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Password"
-                className="w-full p-3 rounded-lg bg-[#1e253f] border border-purple-600 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
+              <div className="relative">
+                <input
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Password"
+                  className="w-full p-3 pr-12 rounded-lg bg-[#1e253f] border border-purple-600 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-400 hover:text-purple-300"
+                >
+                  {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                </button>
+              </div>
             )}
             <input
               name="full_name"

@@ -1,7 +1,7 @@
 'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { FaFacebook, FaInstagram, FaStripe, FaCar, FaLock, FaGoogle, FaMicrosoft } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaStripe, FaCar, FaLock, FaGoogle, FaMicrosoft, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { SiWhatsapp } from 'react-icons/si';
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -46,6 +46,8 @@ export default function ConnectPage() {
   const [mobileDeCompanyName, setMobileDeCompanyName] = useState<string>('');
   const [as24Username, setAs24Username] = useState<string>('');
   const [as24Password, setAs24Password] = useState<string>('');
+  const [showMobileDePassword, setShowMobileDePassword] = useState<boolean>(false);
+  const [showAS24Password, setShowAS24Password] = useState<boolean>(false);
   const [stripe, setStripe] = useState<{ connected: boolean; cardBrand: string | null; last4: string | null }>({ connected: false, cardBrand: null, last4: null });
   const [wa, setWa] = useState<{ connected: boolean; phoneNumberId: string | null }>({ connected: false, phoneNumberId: null });
   const [waOpen, setWaOpen] = useState(false);
@@ -708,13 +710,22 @@ export default function ConnectPage() {
                 </div>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700">Password</label>
-                  <input
-                    type="password"
-                    value={mobileDePassword}
-                    onChange={(e) => setMobileDePassword(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showMobileDePassword ? "text" : "password"}
+                      value={mobileDePassword}
+                      onChange={(e) => setMobileDePassword(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50 pr-10"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileDePassword(!showMobileDePassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                    >
+                      {showMobileDePassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <div className="flex justify-end space-x-2">
                   <button
@@ -774,13 +785,22 @@ export default function ConnectPage() {
                 </div>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700">Password</label>
-                  <input
-                    type="password"
-                    value={as24Password}
-                    onChange={(e) => setAs24Password(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring focus:ring-yellow-200 focus:ring-opacity-50"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showAS24Password ? "text" : "password"}
+                      value={as24Password}
+                      onChange={(e) => setAs24Password(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-yellow-500 focus:ring focus:ring-yellow-200 focus:ring-opacity-50 pr-10"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAS24Password(!showAS24Password)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                    >
+                      {showAS24Password ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <div className="flex justify-end space-x-2">
                   <button

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function NewPasswordPage() {
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
@@ -11,6 +12,8 @@ export default function NewPasswordPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // Capture tokens from Supabase email link (#access_token=...&refresh_token=...)
   useEffect(() => {
@@ -78,11 +81,29 @@ export default function NewPasswordPage() {
         <form onSubmit={submit} className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="Min 12 chars, upper, lower, number, symbol" />
+            <div className="relative">
+              <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10" placeholder="Min 12 chars, upper, lower, number, symbol" />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
+              >
+                {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+              </button>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Confirm password</label>
-            <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+            <div className="relative">
+              <input type={showConfirm ? "text" : "password"} value={confirm} onChange={(e) => setConfirm(e.target.value)} required className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10" />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
+              >
+                {showConfirm ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+              </button>
+            </div>
           </div>
           <button type="submit" disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60">{loading ? 'Saving...' : 'Save password'}</button>
         </form>

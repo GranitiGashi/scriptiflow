@@ -5,6 +5,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import { stripePromise } from '@/lib/stripe';
 import SaveCardForm from '@/components/SaveCardForm';
 import authManager from "@/lib/auth";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function SettingsPage() {
   const base = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
@@ -24,6 +25,9 @@ export default function SettingsPage() {
   const [pwdSaving, setPwdSaving] = useState<boolean>(false);
   const [pwdMsg, setPwdMsg] = useState<string | null>(null);
   const [logoutAll, setLogoutAll] = useState<boolean>(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState<boolean>(false);
+  const [showNewPassword, setShowNewPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
 
   const [profile, setProfile] = useState<{ full_name?: string; email?: string; company_name?: string; phone?: string }>({});
   const [tier, setTier] = useState<string | null>(null);
@@ -224,15 +228,42 @@ export default function SettingsPage() {
               <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <div className="text-sm text-gray-600 mb-1">Current Password</div>
-                  <input type="password" value={pwdCurrent} onChange={e => setPwdCurrent(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Current password" />
+                  <div className="relative">
+                    <input type={showCurrentPassword ? "text" : "password"} value={pwdCurrent} onChange={e => setPwdCurrent(e.target.value)} className="w-full border rounded px-3 py-2 pr-10" placeholder="Current password" />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                    >
+                      {showCurrentPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-600 mb-1">New Password</div>
-                  <input type="password" value={pwdNew} onChange={e => setPwdNew(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="At least 8 characters" />
+                  <div className="relative">
+                    <input type={showNewPassword ? "text" : "password"} value={pwdNew} onChange={e => setPwdNew(e.target.value)} className="w-full border rounded px-3 py-2 pr-10" placeholder="At least 8 characters" />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                    >
+                      {showNewPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-600 mb-1">Confirm New Password</div>
-                  <input type="password" value={pwdConfirm} onChange={e => setPwdConfirm(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Re-enter new password" />
+                  <div className="relative">
+                    <input type={showConfirmPassword ? "text" : "password"} value={pwdConfirm} onChange={e => setPwdConfirm(e.target.value)} className="w-full border rounded px-3 py-2 pr-10" placeholder="Re-enter new password" />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                    >
+                      {showConfirmPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                    </button>
+                  </div>
                 </div>
               </div>
               <label className="mt-3 inline-flex items-center gap-2 text-sm text-gray-700">

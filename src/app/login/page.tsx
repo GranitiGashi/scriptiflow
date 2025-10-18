@@ -6,6 +6,7 @@ import axios from "axios";
 import "../../app/globals.css";
 import NavigationBar from "@/components/NavigationBar";
 import Footer from "@/components/Footer";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export interface User {
   id: string;
@@ -36,6 +37,7 @@ const LoginForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
 
@@ -128,17 +130,26 @@ const LoginForm: React.FC = () => {
               </div>
               <div>
                 <label htmlFor="password" className="block mb-2 text-sm text-gray-300">Password</label>
-                <input
-                  id="password"
-                  className="w-full px-4 py-3 rounded-lg bg-gray-900/60 border border-purple-700 text-white placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  type="password"
-                  name="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  autoComplete="current-password"
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    className="w-full px-4 py-3 pr-12 rounded-lg bg-gray-900/60 border border-purple-700 text-white placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-400 hover:text-purple-300"
+                  >
+                    {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                  </button>
+                </div>
                 <div className="mt-2 text-right">
                   <a href="/auth/forgot-password" className="text-xs text-purple-300 hover:text-purple-200">Forgot password?</a>
                 </div>
