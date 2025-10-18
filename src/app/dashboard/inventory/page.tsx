@@ -600,26 +600,26 @@ export default function InventoryPage() {
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-lg font-semibold">Social Post Preview</div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-lg font-semibold">Social Post Preview</div>
-                <div className="flex items-center gap-3 text-sm">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedPlatforms.facebook}
-                      onChange={(e)=>setSelectedPlatforms(p=>({ ...p, facebook: e.target.checked }))}
-                    />
-                    <FacebookIcon className="h-4 w-4 text-blue-600" />
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedPlatforms.instagram}
-                      onChange={(e)=>setSelectedPlatforms(p=>({ ...p, instagram: e.target.checked }))}
-                    />
-                    <InstagramIcon className="h-4 w-4 text-pink-500" />
-                  </label>
-                </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-600 font-medium">Choose platform:</span>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedPlatforms.facebook}
+                    onChange={(e)=>setSelectedPlatforms(p=>({ ...p, facebook: e.target.checked }))}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <FacebookIcon className="h-6 w-6 text-blue-600" />
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedPlatforms.instagram}
+                    onChange={(e)=>setSelectedPlatforms(p=>({ ...p, instagram: e.target.checked }))}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <InstagramIcon className="h-6 w-6 text-pink-500" />
+                </label>
               </div>
             </div>
             {previewLoading ? (

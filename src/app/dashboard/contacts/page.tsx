@@ -46,7 +46,7 @@ export default function ContactsPage() {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    const id = setTimeout(() => setDebouncedQ(q), 350);
+    const id = setTimeout(() => setDebouncedQ(q), 300);
     return () => clearTimeout(id);
   }, [q]);
 
@@ -74,16 +74,11 @@ export default function ContactsPage() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQ, source, hasEmail, hasPhone, limit, offset]);
+  useEffect(() => { fetchData(); }, [debouncedQ, source, hasEmail, hasPhone, limit, offset]);
 
   const toggleAll = (checked: boolean) => {
     const map: Record<string, boolean> = {};
-    if (checked) {
-      for (const r of rows) map[r.id] = true;
-    }
+    if (checked) rows.forEach(r => map[r.id] = true);
     setSelected(map);
   };
 
@@ -104,7 +99,7 @@ export default function ContactsPage() {
   };
 
   const bulkDelete = async () => {
-    if (selectedIds.length === 0) return;
+    if (!selectedIds.length) return;
     if (!confirm(`Delete ${selectedIds.length} contact(s)?`)) return;
     setLoading(true);
     try {
@@ -118,51 +113,60 @@ export default function ContactsPage() {
         const err = await res.json();
         alert(err.error || 'Delete failed');
       }
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
+  const totalActive = rows.filter(r => !r.deleted_at).length;
+  const totalDeleted = rows.filter(r => r.deleted_at).length;
+
   const columns: GridColDef<ContactRow>[] = [
-    {
-      field: 'select', headerName: '', width: 50, sortable: false, filterable: false,
-      renderHeader: () => (
-        <Checkbox
-          checked={rows.length > 0 && selectedIds.length === rows.length}
-          onChange={(e) => toggleAll(e.target.checked)}
-        />
-      ),
-      renderCell: (params) => (
-        <Checkbox
-          checked={!!selected[params.row.id]}
-          onChange={(e) => setSelected((s) => ({ ...s, [params.row.id]: e.target.checked }))}
-        />
-      )
+    { field: 'select', headerName: '', width: 50, sortable: false, filterable: false,
+      renderHeader: () => <Checkbox checked={rows.length > 0 && selectedIds.length === rows.length} onChange={(e) => toggleAll(e.target.checked)} />,
+      renderCell: (params) => <Checkbox checked={!!selected[params.row.id]} onChange={(e) => setSelected(s => ({ ...s, [params.row.id]: e.target.checked }))} />
     },
-    { field: 'name', headerName: 'Name', flex: 1, valueGetter: (p) => ([p.row.first_name, p.row.last_name].filter(Boolean).join(' ') || '—') },
+    { field: 'name', headerName: 'Name', flex: 1, valueGetter: (p) => [p.row.first_name, p.row.last_name].filter(Boolean).join(' ') || '—' },
     { field: 'email', headerName: 'Email', flex: 1 },
     { field: 'phone', headerName: 'Phone', flex: 1 },
     { field: 'source', headerName: 'Source', width: 140 },
     { field: 'created_at', headerName: 'Created', width: 140, valueGetter: (p) => new Date(p.row.created_at).toLocaleDateString() },
-    { field: 'status', headerName: 'Status', width: 120, valueGetter: (p) => (p.row.deleted_at ? 'Deleted' : 'Active') },
+    { field: 'status', headerName: 'Status', width: 120,
+      renderCell: (params) => <Chip label={params.row.deleted_at ? 'Deleted' : 'Active'} color={params.row.deleted_at ? 'error' : 'success'} size="small" variant="filled" />
+    },
   ];
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f4f5f7', p: { xs: 1, md: 3 } }}>
-      {/* Header */}
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f0f4f8', p: { xs: 2, md: 4 } }}>
+
+      {/* Summary Cards */}
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} mb={4}>
+        <Paper sx={{ flex: 1, p: 3, borderRadius: 2, bgcolor: '#1976d2', color: 'white', boxShadow: 4 }}>
+          <Typography variant="h6">Total Contacts</Typography>
+          <Typography variant="h4">{rows.length}</Typography>
+        </Paper>
+        <Paper sx={{ flex: 1, p: 3, borderRadius: 2, bgcolor: '#2e7d32', color: 'white', boxShadow: 4 }}>
+          <Typography variant="h6">Active</Typography>
+          <Typography variant="h4">{totalActive}</Typography>
+        </Paper>
+        <Paper sx={{ flex: 1, p: 3, borderRadius: 2, bgcolor: '#d32f2f', color: 'white', boxShadow: 4 }}>
+          <Typography variant="h6">Deleted</Typography>
+          <Typography variant="h4">{totalDeleted}</Typography>
+        </Paper>
+      </Stack>
+
+      {/* Header + Actions */}
       <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} mb={3}>
         <Box>
-          <Typography variant="h5" fontWeight={600}>Contacts</Typography>
+          <Typography variant="h4" fontWeight={700} color="primary">Contacts</Typography>
           <Typography variant="body2" color="text.secondary">Search, filter, export, and manage your contacts efficiently.</Typography>
         </Box>
         <Stack direction="row" spacing={1} mt={{ xs: 1, md: 0 }}>
-          <Button variant="outlined" startIcon={<DownloadIcon />} onClick={exportCsv}>Export CSV</Button>
+          <Button variant="outlined" startIcon={<DownloadIcon />} color="secondary" onClick={exportCsv}>Export CSV</Button>
           <Button variant="contained" startIcon={<DeleteIcon />} color="error" disabled={selectedIds.length === 0 || loading} onClick={bulkDelete}>Delete selected</Button>
         </Stack>
       </Stack>
 
       {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3, borderRadius: 2, boxShadow: 2 }}>
+      <Paper sx={{ p: 3, mb: 3, borderRadius: 2, boxShadow: 3, bgcolor: '#ffffff', position: 'sticky', top: 0, zIndex: 10 }}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
           <TextField
             size="small"
@@ -173,7 +177,7 @@ export default function ContactsPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
+                  <SearchIcon fontSize="small" color="action" />
                 </InputAdornment>
               )
             }}
@@ -194,7 +198,7 @@ export default function ContactsPage() {
       </Paper>
 
       {/* Data Grid */}
-      <Paper sx={{ height: 600, width: '100%', borderRadius: 2, boxShadow: 2, overflow: 'hidden' }}>
+      <Paper sx={{ height: 600, width: '100%', borderRadius: 2, boxShadow: 3, overflow: 'hidden' }}>
         <DataGrid
           rows={rows}
           columns={columns}
@@ -206,8 +210,9 @@ export default function ContactsPage() {
           pageSizeOptions={[limit]}
           hideFooterPagination
           sx={{
-            '& .MuiDataGrid-columnHeaders': { bgcolor: '#eef2f7', fontWeight: 600 },
-            '& .MuiDataGrid-row:hover': { bgcolor: '#f9f9fb', cursor: 'pointer' },
+            '& .MuiDataGrid-columnHeaders': { bgcolor: '#bbdefb', fontWeight: 600 },
+            '& .MuiDataGrid-row:nth-of-type(odd)': { bgcolor: '#f5f7fa' },
+            '& .MuiDataGrid-row:hover': { bgcolor: '#e3f2fd', cursor: 'pointer' },
             '& .MuiDataGrid-cell': { py: 1 },
           }}
         />
@@ -227,4 +232,4 @@ export default function ContactsPage() {
     </Box>
   );
 }
-//eraaaaaaaaaa
+//eraaaaaaaaaaaaaaa
