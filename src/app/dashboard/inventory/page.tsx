@@ -66,12 +66,14 @@ export default function InventoryPage() {
 
         if (!res.ok) throw new Error('Please connect your mobile.de account.');
         setMobileDeConnected(true);
+        // Also check AutoScout24; if mobile.de not connected, try AS24 instead
         try {
           const as24 = await authManager.authenticatedFetch(`${baseDomain}/api/autoscout24/connect`, { headers: { Accept: 'application/json' } });
           if (as24.ok) setAs24Connected(true);
         } catch (_) {}
       } catch (err: any) {
         console.error('Connection check failed:', err);
+        // If mobile.de not connected, try AS24 before redirecting
         try {
           const as24 = await authManager.authenticatedFetch(`${baseDomain}/api/autoscout24/connect`, { headers: { Accept: 'application/json' } });
           if (as24.ok) {
@@ -104,6 +106,7 @@ export default function InventoryPage() {
           ? `${baseDomain}/api/get-user-cars`
           : `${baseDomain}/api/autoscout24/remote-listings`;
 
+        // Append server-side query params for mobile.de
         if (mobileDeConnected) {
           const params = new URLSearchParams();
           params.set('page.number', '1');
@@ -118,7 +121,9 @@ export default function InventoryPage() {
           url += `?${params.toString()}`;
         }
         const res = await authManager.authenticatedFetch(url, {
-          headers: { Accept: 'application/json' },
+          headers: {
+            Accept: 'application/json',
+          },
         });
 
         if (!res.ok) {
@@ -127,6 +132,8 @@ export default function InventoryPage() {
         }
 
         const data = await res.json();
+
+        // Support both legacy (XML-like JSON) and new JSON formats
         let rawCars: any[] = [];
         if (mobileDeConnected) {
           rawCars = Array.isArray(data?.['search-result']?.ads?.ad)
@@ -148,6 +155,7 @@ export default function InventoryPage() {
           const model = c?.vehicle?.model?.['@key'] || c?.vehicle?.model || c?.model || '';
           const modelDescription = c?.vehicle?.['model-description']?.['@value'] || c?.modelDescription || '';
 
+          // Robust price extraction across shapes
           let priceVal: any = '';
           if (c?.price?.['consumer-price-amount']?.['@value']) priceVal = c.price['consumer-price-amount']['@value'];
           else if (c?.price?.consumerPrice?.amount?.['@value']) priceVal = c.price.consumerPrice.amount['@value'];
@@ -171,6 +179,7 @@ export default function InventoryPage() {
               image = c.images.image.representation[0]['@url'];
             }
           } else {
+            // AutoScout24: try common fields
             const imgs = Array.isArray(c?.images) ? c.images : (Array.isArray(c?.media) ? c.media : []);
             if (imgs.length) {
               const i0 = imgs[0];
@@ -238,19 +247,20 @@ export default function InventoryPage() {
     fetchCars();
   }, [mobileDeConnected, as24Connected, baseDomain, allowed, search, sort]);
 
-  // Load filter options
+  // Load filter options (makes, and models for selected make) from server cache
   useEffect(() => {
     if (!mobileDeConnected) return;
     let cancelled = false;
     async function loadFilters() {
       try {
         setIsLoadingFilters(true);
+        // Always fetch makes
         const makeRes = await authManager.authenticatedFetch(`${baseDomain}/api/mobilede/filters`, { headers: { Accept: 'application/json' } });
         if (makeRes.ok) {
           const d = await makeRes.json();
           if (!cancelled) setAvailableMakes(Array.isArray(d?.makes) ? d.makes : []);
         }
-
+        // Fetch models if a make is selected
         const make = (searchDraft.make || search.make || '').trim();
         if (make) {
           const modelRes = await authManager.authenticatedFetch(`${baseDomain}/api/mobilede/filters?make=${encodeURIComponent(make)}`, { headers: { Accept: 'application/json' } });
@@ -283,6 +293,7 @@ export default function InventoryPage() {
     } catch {}
   }, []);
 
+  // Apply filters client-side
   useEffect(() => {
     const make = (search.make || '').trim().toLowerCase();
     const model = (search.model || '').trim().toLowerCase();
@@ -408,91 +419,250 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="p-4">
-      {error && <div className="text-red-600 mb-4">{error}</div>}
-      {loading && <div>Loading cars...</div>}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map(car => (
-          <div key={car.id} className="border p-2 rounded shadow">
-            {car.image && <img src={car.image} alt={`${car.make} ${car.model}`} className="w-full h-48 object-cover" />}
-            <h3 className="font-bold">{car.make} {car.model}</h3>
-            <p>{car.modelDescription}</p>
-            <p>{car.price} {car.currency}</p>
-            <button
-              className="mt-2 bg-blue-600 text-white px-2 py-1 rounded"
-              onClick={() => openSocialPreview(car)}
-            >
-              Social Preview
-            </button>
-          </div>
-        ))}
-      </div>
+      <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
+        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
+          Car Inventory
+        </h1>
 
-      <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} fullWidth maxWidth="md">
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-lg font-semibold">Social Post Preview</div>
-            <div className="flex items-center gap-3 text-sm">
-              <label className="flex items-center gap-1"><input type="checkbox" checked={selectedPlatforms.facebook} onChange={(e)=>setSelectedPlatforms(p=>({ ...p, facebook: e.target.checked }))} /> Facebook</label>
-              <label className="flex items-center gap-1"><input type="checkbox" checked={selectedPlatforms.instagram} onChange={(e)=>setSelectedPlatforms(p=>({ ...p, instagram: e.target.checked }))} /> Instagram</label>
+        {/* Search and sorting */}
+        <div className="max-w-5xl mx-auto mb-6 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setSearch({
+                make: (searchDraft.make || '').trim(),
+                model: (searchDraft.model || '').trim(),
+                q: (searchDraft.q || '').trim(),
+              });
+            }}
+            className="grid grid-cols-1 md:grid-cols-5 gap-3"
+          >
+            <div className="md:col-span-1">
+              <label className="block text-sm text-gray-600 mb-1">Make</label>
+              <select
+                value={searchDraft.make}
+                onChange={(e) => setSearchDraft(s => ({ ...s, make: e.target.value, model: '' }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              >
+                <option value="">All</option>
+                {availableMakes.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
             </div>
+            <div className="md:col-span-1">
+              <label className="block text-sm text-gray-600 mb-1">Model</label>
+              <select
+                value={searchDraft.model}
+                onChange={(e) => setSearchDraft(s => ({ ...s, model: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                disabled={!searchDraft.make && !search.make}
+              >
+                <option value="">All</option>
+                {availableModels.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-600 mb-1">Search term</label>
+              <input
+                value={searchDraft.q}
+                onChange={(e) => setSearchDraft(s => ({ ...s, q: e.target.value }))}
+                placeholder="Keyword in model description"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-sm text-gray-600 mb-1">Sort by</label>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as any)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              >
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="makeModelAsc">Make/Model A → Z</option>
+                <option value="makeModelDesc">Make/Model Z → A</option>
+              </select>
+            </div>
+            <div className="md:col-span-5 flex items-center justify-end gap-2">
+              <button type="submit" className="px-4 py-2 bg-black text-white rounded-lg">Search</button>
+              <button
+                type="button"
+                className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg"
+                onClick={() => { setSearchDraft({ make: '', model: '', q: '' }); setSearch({}); }}
+              >
+                Reset
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {!allowed && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-center max-w-2xl mx-auto">
+            Boost ist im {tier ?? 'Basic'}-Paket gesperrt. Sie können Ihre Fahrzeuge ansehen.
           </div>
-          {previewLoading ? (
-            <div className="flex items-center justify-center h-40">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="border rounded p-2 bg-gray-50">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm text-gray-600">Images ({previewImages.length})</div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <label className="flex items-center gap-1"><input type="checkbox" checked={autoSelectTop10} onChange={(e)=>{
-                      setAutoSelectTop10(e.target.checked);
-                      if (e.target.checked) {
-                        const s = new Set<number>();
-                        for (let i = 0; i < Math.min(10, previewImages.length); i++) s.add(i);
-                        setSelectedIdxs(s);
-                      }
-                    }} /> Auto-select top 10</label>
-                    <button className="px-2 py-1 bg-gray-200 rounded" onClick={()=>{ const s=new Set<number>(); for(let i=0;i<Math.min(10, previewImages.length); i++) s.add(i); setSelectedIdxs(s); setAutoSelectTop10(true); }}>Select 10</button>
-                    <button className="px-2 py-1 bg-gray-200 rounded" onClick={()=>{ setSelectedIdxs(new Set()); setAutoSelectTop10(false); }}>Clear</button>
+        )}
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg text-center max-w-2xl mx-auto">
+            {error}
+          </div>
+        )}
+
+        {loading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="rounded-xl shadow-sm p-6 bg-gray-100 animate-pulse"
+              >
+                <div className="w-full h-48 bg-gray-300 rounded mb-4"></div>
+                <div className="h-6 bg-gray-300 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-300 rounded w-full mb-2"></div>
+                <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && filtered.length === 0 && !error && (
+          <div className="text-center text-gray-600">
+            No cars found in your inventory.
+          </div>
+        )}
+
+        {!loading && filtered.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {filtered.map((car) => (
+              <div key={car.id} className="rounded-xl overflow-hidden border bg-white shadow-sm hover:shadow-md transition">
+                <div className="relative group">
+                  {car.image ? (
+                    <img src={car.image} alt={`${car.make} ${car.model}`} className="w-full h-48 object-cover" />
+                  ) : (
+                    <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                      {/* <FaCar className="text-gray-400 text-4xl" /> */}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-70 group-hover:opacity-90 transition"></div>
+                  <div className="absolute bottom-2 left-3 text-white font-semibold text-lg">
+                    {car.make} {car.model}
+                  </div>
+                  <div className="absolute top-2 right-2 bg-white/90 text-gray-900 text-sm font-semibold px-2 py-1 rounded">
+                    {(car.price ? `${car.price} ${car.currency}` : '')}
                   </div>
                 </div>
-                <div className="text-xs text-gray-600 mb-2">Selected: {selectedIdxs.size} / 10</div>
-                <div className="grid grid-cols-2 gap-2 max-h-[600px] overflow-auto">
-                  {previewImages.map((src, i) => {
-                    const sel = selectedIdxs.has(i);
-                    return (
-                      <button key={i} type="button" onClick={()=>{
-                        setAutoSelectTop10(false);
-                        setSelectedIdxs(prev => {
-                          const next = new Set(prev);
-                          if (next.has(i)) { next.delete(i); return next; }
-                          if (next.size >= 10) { alert('You can select up to 10 images.'); return next; }
-                          next.add(i); return next;
-                        });
-                      }} className={`relative border rounded overflow-hidden ${sel ? 'ring-2 ring-purple-600' : ''}`}>
-                        <img src={src} className="w-full h-56 object-cover" />
-                        <div className={`absolute top-1 left-1 text-xs px-1.5 py-0.5 rounded ${sel ? 'bg-purple-600 text-white' : 'bg-white/80 text-gray-700'}`}>{sel ? 'Selected' : 'Tap to select'}</div>
-                      </button>
-                    );
-                  })}
+                <div className="p-4">
+                  {car.modelDescription && (
+                    <div className="text-sm text-gray-600">{car.modelDescription}</div>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-700">
+                    {car.mileage && <span className="bg-gray-100 px-2 py-1 rounded">Mileage: {car.mileage}</span>}
+                    {car.firstRegistration && <span className="bg-gray-100 px-2 py-1 rounded">First reg: {car.firstRegistration}</span>}
+                    {car.fuel && <span className="bg-gray-100 px-2 py-1 rounded">Fuel: {car.fuel}</span>}
+                    {car.power && <span className="bg-gray-100 px-2 py-1 rounded">Power: {car.power}</span>}
+                    {car.gearbox && <span className="bg-gray-100 px-2 py-1 rounded">Gearbox: {car.gearbox}</span>}
+                  </div>
+                  {(car.dealerCity || car.dealerZip) && (
+                    <div className="mt-2 text-xs text-gray-500">Location: {car.dealerCity || ''} {car.dealerZip ? `(${car.dealerZip})` : ''}</div>
+                  )}
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    <a
+                      href={car.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-center bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-3 rounded"
+                    >
+                      View
+                    </a>
+                    <button
+                      onClick={() => allowed ? handleBoostPost(car) : undefined}
+                      className={`text-white text-sm font-medium py-2 px-3 rounded ${allowed ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'}`}
+                      title={allowed ? 'Boost diesen Beitrag' : 'Upgrade erforderlich: Boost nur ab Pro'}
+                    >
+                      Boost
+                    </button>
+                    <button
+                      onClick={() => allowed ? openSocialPreview(car) : undefined}
+                      className={`text-white text-sm font-medium py-2 px-3 rounded ${allowed ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-400 cursor-not-allowed'}`}
+                      title={allowed ? 'Preview social post' : 'Upgrade erforderlich'}
+                    >
+                      Post
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="border rounded p-2">
-                <div className="text-sm text-gray-600 mb-1">Caption</div>
-                <textarea value={previewCaption} onChange={(e)=>setPreviewCaption(e.target.value)} className="w-full border rounded p-2 h-48" />
-                <div className="text-xs text-gray-500 mt-1">You can edit the caption before posting. We'll post selected images (max 10).</div>
+            ))}
+          </div>
+        )}
+        <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} fullWidth maxWidth="xl">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-lg font-semibold">Social Post Preview</div>
+              <div className="flex items-center gap-3 text-sm">
+                <label className="flex items-center gap-1"><input type="checkbox" checked={selectedPlatforms.facebook} onChange={(e)=>setSelectedPlatforms(p=>({ ...p, facebook: e.target.checked }))} /> Facebook</label>
+                <label className="flex items-center gap-1"><input type="checkbox" checked={selectedPlatforms.instagram} onChange={(e)=>setSelectedPlatforms(p=>({ ...p, instagram: e.target.checked }))} /> Instagram</label>
               </div>
             </div>
-          )}
-          <div className="mt-4 flex items-center justify-end gap-2">
-            <button onClick={() => setPreviewOpen(false)} className="px-3 py-2 rounded bg-gray-100">Cancel</button>
-            <button onClick={queuePost} disabled={previewLoading || posting || previewImages.length === 0} className="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-60">{posting ? 'Queuing…' : 'Queue Post'}</button>
+            {previewLoading ? (
+              <div className="flex items-center justify-center h-40">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="border rounded p-2 bg-gray-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm text-gray-600">Images ({previewImages.length})</div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <label className="flex items-center gap-1"><input type="checkbox" checked={autoSelectTop10} onChange={(e)=>{
+                        setAutoSelectTop10(e.target.checked);
+                        if (e.target.checked) {
+                          const s = new Set<number>();
+                          for (let i = 0; i < Math.min(10, previewImages.length); i++) s.add(i);
+                          setSelectedIdxs(s);
+                        }
+                      }} /> Auto-select top 10</label>
+                      <button className="px-2 py-1 bg-gray-200 rounded" onClick={()=>{ const s=new Set<number>(); for(let i=0;i<Math.min(10, previewImages.length); i++) s.add(i); setSelectedIdxs(s); setAutoSelectTop10(true); }}>Select 10</button>
+                      <button className="px-2 py-1 bg-gray-200 rounded" onClick={()=>{ setSelectedIdxs(new Set()); setAutoSelectTop10(false); }}>Clear</button>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600 mb-2">Selected: {selectedIdxs.size} / 10</div>
+                  <div className="grid grid-cols-2 gap-2 max-h-[600px] overflow-auto">
+                    {previewImages.map((src, i) => {
+                      const sel = selectedIdxs.has(i);
+                      return (
+                        <button key={i} type="button" onClick={()=>{
+                          setAutoSelectTop10(false);
+                          setSelectedIdxs(prev => {
+                            const next = new Set(prev);
+                            if (next.has(i)) { next.delete(i); return next; }
+                            if (next.size >= 10) { alert('You can select up to 10 images.'); return next; }
+                            next.add(i); return next;
+                          });
+                        }} className={`relative border rounded overflow-hidden ${sel ? 'ring-2 ring-purple-600' : ''}`}>
+                          <img src={src} className="w-full h-56 object-cover" />
+                          <div className={`absolute top-1 left-1 text-xs px-1.5 py-0.5 rounded ${sel ? 'bg-purple-600 text-white' : 'bg-white/80 text-gray-700'}`}>{sel ? 'Selected' : 'Tap to select'}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="border rounded p-2">
+                  <div className="text-sm text-gray-600 mb-1">Caption</div>
+                  <textarea value={previewCaption} onChange={(e)=>setPreviewCaption(e.target.value)} className="w-full border rounded p-2 h-48" />
+                  <div className="text-xs text-gray-500 mt-1">You can edit the caption before posting. We'll post selected images (max 10).</div>
+                </div>
+              </div>
+            )}
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button onClick={() => setPreviewOpen(false)} className="px-3 py-2 rounded bg-gray-100">Cancel</button>
+              <button onClick={queuePost} disabled={previewLoading || posting || previewImages.length === 0} className="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-60">{posting ? 'Queuing…' : 'Queue Post'}</button>
+            </div>
           </div>
-        </div>
-      </Dialog>
-    </div>
+        </Dialog>
+      </div>
   );
 }
+
+
