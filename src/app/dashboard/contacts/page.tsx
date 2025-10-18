@@ -3,11 +3,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import authManager from '@/lib/auth';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { Box, Button, Checkbox, TextField, Paper, Stack, Chip, InputAdornment, Pagination } from '@mui/material';
+import {
+  Box,
+  Button,
+  Checkbox,
+  TextField,
+  Paper,
+  Stack,
+  Chip,
+  InputAdornment,
+  Pagination,
+  Typography
+} from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 import DeleteIcon from '@mui/icons-material/Delete';
- 
 
 interface ContactRow {
   id: string;
@@ -31,11 +41,9 @@ export default function ContactsPage() {
   const [source, setSource] = useState('');
   const [hasEmail, setHasEmail] = useState(false);
   const [hasPhone, setHasPhone] = useState(false);
-  
   const [limit, setLimit] = useState(25);
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
-  
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedQ(q), 350);
@@ -52,7 +60,7 @@ export default function ContactsPage() {
       if (source) params.set('source', source);
       if (hasEmail) params.set('hasEmail', 'true');
       if (hasPhone) params.set('hasPhone', 'true');
-      
+
       params.set('limit', String(limit));
       params.set('offset', String(offset));
       const res = await authManager.authenticatedFetch(`${baseDomain}/api/contacts?${params.toString()}`);
@@ -83,10 +91,7 @@ export default function ContactsPage() {
     const token = await authManager.getValidAccessToken();
     const refresh = localStorage.getItem('refresh_token') || '';
     const res = await fetch(`${baseDomain}/api/contacts/export`, { headers: { Authorization: `Bearer ${token}`, 'x-refresh-token': refresh } });
-    if (!res.ok) {
-      alert('Export failed');
-      return;
-    }
+    if (!res.ok) return alert('Export failed');
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -108,9 +113,8 @@ export default function ContactsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: selectedIds, hard: false }),
       });
-      if (res.ok) {
-        await fetchData();
-      } else {
+      if (res.ok) await fetchData();
+      else {
         const err = await res.json();
         alert(err.error || 'Delete failed');
       }
@@ -144,67 +148,83 @@ export default function ContactsPage() {
   ];
 
   return (
-      <Box sx={{ minHeight: '100vh', bgcolor: '#f9fafb', p: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end', justifyContent: 'space-between', mb: 2 }}>
-          <Box>
-            <Box component="h2" sx={{ fontSize: 20, fontWeight: 600 }}>Contacts</Box>
-            <Box sx={{ fontSize: 12, color: 'text.secondary' }}>Search, filter, export and bulk-manage your contacts.</Box>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button variant="outlined" startIcon={<DownloadIcon />} onClick={exportCsv}>Export CSV</Button>
-            <Button variant="contained" startIcon={<DeleteIcon />} color="error" onClick={bulkDelete} disabled={selectedIds.length === 0 || loading}>Delete selected</Button>
-          </Box>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f4f5f7', p: { xs: 1, md: 3 } }}>
+      {/* Header */}
+      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} mb={3}>
+        <Box>
+          <Typography variant="h5" fontWeight={600}>Contacts</Typography>
+          <Typography variant="body2" color="text.secondary">Search, filter, export, and manage your contacts efficiently.</Typography>
         </Box>
+        <Stack direction="row" spacing={1} mt={{ xs: 1, md: 0 }}>
+          <Button variant="outlined" startIcon={<DownloadIcon />} onClick={exportCsv}>Export CSV</Button>
+          <Button variant="contained" startIcon={<DeleteIcon />} color="error" disabled={selectedIds.length === 0 || loading} onClick={bulkDelete}>Delete selected</Button>
+        </Stack>
+      </Stack>
 
-        <Paper sx={{ p: 2, borderRadius: 1, mb: 2, boxShadow: 1 }}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ xs: 'stretch', md: 'center' }}>
-            <TextField
-              size="small"
-              placeholder="Search name, email, or phone"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              InputProps={{ startAdornment: (
+      {/* Filters */}
+      <Paper sx={{ p: 2, mb: 3, borderRadius: 2, boxShadow: 2 }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+          <TextField
+            size="small"
+            placeholder="Search name, email, or phone"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            fullWidth
+            InputProps={{
+              startAdornment: (
                 <InputAdornment position="start">
                   <SearchIcon fontSize="small" />
                 </InputAdornment>
-              ) }}
-            />
-            <TextField size="small" label="Source" value={source} onChange={(e) => setSource(e.target.value)} placeholder="gmail/outlook/whatsapp" />
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Chip label="Has email" clickable variant={hasEmail ? 'filled' : 'outlined'} color={hasEmail ? 'primary' : 'default'} onClick={() => setHasEmail(!hasEmail)} />
-              <Chip label="Has phone" clickable variant={hasPhone ? 'filled' : 'outlined'} color={hasPhone ? 'primary' : 'default'} onClick={() => setHasPhone(!hasPhone)} />
-              <Button size="small" onClick={() => { setQ(''); setDebouncedQ(''); setSource(''); setHasEmail(false); setHasPhone(false); setOffset(0); }}>Reset</Button>
-            </Stack>
+              )
+            }}
+          />
+          <TextField
+            size="small"
+            label="Source"
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            placeholder="gmail/outlook/whatsapp"
+          />
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+            <Chip label="Has email" clickable variant={hasEmail ? 'filled' : 'outlined'} color={hasEmail ? 'primary' : 'default'} onClick={() => setHasEmail(!hasEmail)} />
+            <Chip label="Has phone" clickable variant={hasPhone ? 'filled' : 'outlined'} color={hasPhone ? 'primary' : 'default'} onClick={() => setHasPhone(!hasPhone)} />
+            <Button size="small" onClick={() => { setQ(''); setDebouncedQ(''); setSource(''); setHasEmail(false); setHasPhone(false); setOffset(0); }}>Reset</Button>
           </Stack>
-        </Paper>
+        </Stack>
+      </Paper>
 
-        <Box sx={{ height: 600, width: '100%', bgcolor: 'white', borderRadius: 1, boxShadow: 1 }}>
-          <DataGrid
-            rows={rows}
-            columns={columns}
-            getRowId={(r) => r.id}
-            loading={loading}
-            disableRowSelectionOnClick
-            onRowClick={(p) => { window.location.href = `/dashboard/contacts/${p.row.id}`; }}
-            paginationModel={{ page: Math.floor(offset / limit), pageSize: limit }}
-            pageSizeOptions={[limit]}
-            hideFooterPagination
-            sx={{ '& .MuiDataGrid-columnHeaders': { bgcolor: '#f3f4f6' }, '& .MuiDataGrid-row:hover': { bgcolor: '#f9fafb' } }}
-          />
-        </Box>
+      {/* Data Grid */}
+      <Paper sx={{ height: 600, width: '100%', borderRadius: 2, boxShadow: 2, overflow: 'hidden' }}>
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          getRowId={(r) => r.id}
+          loading={loading}
+          disableRowSelectionOnClick
+          onRowClick={(p) => { window.location.href = `/dashboard/contacts/${p.row.id}`; }}
+          paginationModel={{ page: Math.floor(offset / limit), pageSize: limit }}
+          pageSizeOptions={[limit]}
+          hideFooterPagination
+          sx={{
+            '& .MuiDataGrid-columnHeaders': { bgcolor: '#eef2f7', fontWeight: 600 },
+            '& .MuiDataGrid-row:hover': { bgcolor: '#f9f9fb', cursor: 'pointer' },
+            '& .MuiDataGrid-cell': { py: 1 },
+          }}
+        />
+      </Paper>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-          <Box sx={{ fontSize: 12, color: 'text.secondary' }}>Selected: {selectedIds.length}</Box>
-          <Pagination
-            count={Math.max(1, Math.floor(offset / limit) + (rows.length === limit ? 2 : 1))}
-            page={Math.floor(offset / limit) + 1}
-            onChange={(_, p) => setOffset((p - 1) * limit)}
-            color="primary"
-            shape="rounded"
-          />
-        </Box>
-      </Box>
+      {/* Footer */}
+      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems="center" mt={2}>
+        <Typography variant="body2" color="text.secondary">Selected: {selectedIds.length}</Typography>
+        <Pagination
+          count={Math.max(1, Math.floor(offset / limit) + (rows.length === limit ? 2 : 1))}
+          page={Math.floor(offset / limit) + 1}
+          onChange={(_, p) => setOffset((p - 1) * limit)}
+          color="primary"
+          shape="rounded"
+        />
+      </Stack>
+    </Box>
   );
 }
-
-
+//eraaaaaaaaaa

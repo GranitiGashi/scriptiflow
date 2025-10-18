@@ -599,9 +599,6 @@ export default function InventoryPage() {
         <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} fullWidth maxWidth="xl">
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-lg font-semibold">Social Post Preview</div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-lg font-semibold">Social Post Preview</div>
                 <div className="flex items-center gap-3 text-sm">
                   <label className="flex items-center gap-2">
                     <input
@@ -620,7 +617,7 @@ export default function InventoryPage() {
                     <InstagramIcon className="h-4 w-4 text-pink-500" />
                   </label>
                 </div>
-              </div>
+              
             </div>
             {previewLoading ? (
               <div className="flex items-center justify-center h-40">
