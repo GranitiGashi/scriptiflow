@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import authManager from '@/lib/auth';
 import { Dialog } from '@mui/material';
-import { FacebookIcon, InstagramIcon } from 'lucide-react';
+import { Facebook as FacebookIcon, Instagram as InstagramIcon } from 'lucide-react';
 
 interface Car {
   id: string;
@@ -601,30 +601,26 @@ export default function InventoryPage() {
             <div className="flex items-center justify-between mb-3">
               <div className="text-lg font-semibold">Social Post Preview</div>
               <div className="flex items-center justify-between mb-3">
-  <div className="text-lg font-semibold">Social Post Preview</div>
-  <div className="flex items-center gap-2">
-    <button
-      type="button"
-      onClick={() => setSelectedPlatforms(p => ({ ...p, facebook: !p.facebook }))}
-      className={`p-2 rounded-full border transition ${selectedPlatforms.facebook ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-gray-300'}`}
-      aria-pressed={selectedPlatforms.facebook}
-      aria-label="Facebook"
-      title="Facebook"
-    >
-      <FacebookIcon className="h-4 w-4" />
-    </button>
-    <button
-      type="button"
-      onClick={() => setSelectedPlatforms(p => ({ ...p, instagram: !p.instagram }))}
-      className={`p-2 rounded-full border transition ${selectedPlatforms.instagram ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-pink-500 border-gray-300'}`}
-      aria-pressed={selectedPlatforms.instagram}
-      aria-label="Instagram"
-      title="Instagram"
-    >
-      <InstagramIcon className="h-4 w-4" />
-    </button>
-  </div>
-</div>
+                <div className="text-lg font-semibold">Social Post Preview</div>
+                <div className="flex items-center gap-3 text-sm">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedPlatforms.facebook}
+                      onChange={(e)=>setSelectedPlatforms(p=>({ ...p, facebook: e.target.checked }))}
+                    />
+                    <FacebookIcon className="h-4 w-4 text-blue-600" />
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedPlatforms.instagram}
+                      onChange={(e)=>setSelectedPlatforms(p=>({ ...p, instagram: e.target.checked }))}
+                    />
+                    <InstagramIcon className="h-4 w-4 text-pink-500" />
+                  </label>
+                </div>
+              </div>
             </div>
             {previewLoading ? (
               <div className="flex items-center justify-center h-40">
