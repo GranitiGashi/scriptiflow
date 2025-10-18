@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import authManager from '@/lib/auth';
-import { DataGrid, GridColDef, GridToolbar } from '@mui/x-data-grid';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { Box, Button, Checkbox, FormControlLabel, MenuItem, Select, TextField } from '@mui/material';
 
 interface ContactRow {
@@ -27,11 +27,11 @@ export default function ContactsPage() {
   const [source, setSource] = useState('');
   const [hasEmail, setHasEmail] = useState(false);
   const [hasPhone, setHasPhone] = useState(false);
-  const [includeDeleted, setIncludeDeleted] = useState(false);
+  
   const [limit, setLimit] = useState(50);
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [hardDelete, setHardDelete] = useState(false);
+  
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedQ(q), 350);
@@ -48,7 +48,7 @@ export default function ContactsPage() {
       if (source) params.set('source', source);
       if (hasEmail) params.set('hasEmail', 'true');
       if (hasPhone) params.set('hasPhone', 'true');
-      if (includeDeleted) params.set('includeDeleted', 'true');
+      
       params.set('limit', String(limit));
       params.set('offset', String(offset));
       const res = await authManager.authenticatedFetch(`${baseDomain}/api/contacts?${params.toString()}`);
@@ -65,7 +65,7 @@ export default function ContactsPage() {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQ, source, hasEmail, hasPhone, includeDeleted, limit, offset]);
+  }, [debouncedQ, source, hasEmail, hasPhone, limit, offset]);
 
   const toggleAll = (checked: boolean) => {
     const map: Record<string, boolean> = {};
@@ -96,13 +96,13 @@ export default function ContactsPage() {
 
   const bulkDelete = async () => {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Delete ${selectedIds.length} contact(s)? ${hardDelete ? '(hard delete)' : ''}`)) return;
+    if (!confirm(`Delete ${selectedIds.length} contact(s)?`)) return;
     setLoading(true);
     try {
       const res = await authManager.authenticatedFetch(`${baseDomain}/api/contacts/bulk-delete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: selectedIds, hard: hardDelete }),
+        body: JSON.stringify({ ids: selectedIds, hard: false }),
       });
       if (res.ok) {
         await fetchData();
@@ -157,8 +157,7 @@ export default function ContactsPage() {
           <TextField size="small" label="Source" value={source} onChange={(e) => setSource(e.target.value)} placeholder="gmail/outlook/whatsapp" />
           <FormControlLabel control={<Checkbox checked={hasEmail} onChange={(e) => setHasEmail(e.target.checked)} />} label="Has email" />
           <FormControlLabel control={<Checkbox checked={hasPhone} onChange={(e) => setHasPhone(e.target.checked)} />} label="Has phone" />
-          <FormControlLabel control={<Checkbox checked={includeDeleted} onChange={(e) => setIncludeDeleted(e.target.checked)} />} label="Include deleted" />
-          <FormControlLabel control={<Checkbox checked={hardDelete} onChange={(e) => setHardDelete(e.target.checked)} />} label="Hard delete" />
+          
           <Select size="small" value={limit} onChange={(e) => { setOffset(0); setLimit(Number(e.target.value)); }}>
             <MenuItem value={25}>25</MenuItem>
             <MenuItem value={50}>50</MenuItem>
@@ -174,7 +173,6 @@ export default function ContactsPage() {
             loading={loading}
             disableRowSelectionOnClick
             onRowClick={(p) => { window.location.href = `/dashboard/contacts/${p.row.id}`; }}
-            slots={{ toolbar: GridToolbar }}
             paginationModel={{ page: Math.floor(offset / limit), pageSize: limit }}
             onPaginationModelChange={(m) => { setLimit(m.pageSize); setOffset(m.page * m.pageSize); }}
           />
