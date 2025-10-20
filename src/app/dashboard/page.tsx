@@ -32,94 +32,145 @@ const Dashboard: React.FC = () => {
   const firstName = fullName.split(' ')[0];
 
   return (
-    <div className="min-h-screen bg-gray-50 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8">
-      <div className="max-w-5xl mx-auto space-y-8">
+    <div className="space-y-8">
       {/* Greeting Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-1">
           {greeting}, {firstName}
         </h1>
+        <p className="text-gray-500">Here's what's happening with your dealership today</p>
       </div>
 
       {/* Today's Highlights */}
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-900">Today's Highlights</h2>
-            <span className="px-3 py-1 bg-black text-white text-sm font-semibold rounded-full">
+            <h2 className="text-lg font-semibold text-gray-900">Today's Highlights</h2>
+            <span className="px-2.5 py-1 bg-gray-900 text-white text-xs font-semibold rounded-full">
               0
             </span>
           </div>
-          <Link href="/dashboard/calendar" className="text-base font-medium text-gray-900 hover:text-gray-600 flex items-center gap-2 transition-colors">
+          <Link href="/dashboard/calendar" className="text-sm font-medium text-gray-900 hover:text-blue-600 flex items-center gap-1">
             Calendar
-            <i className="fas fa-arrow-right text-sm"></i>
+            <i className="fas fa-arrow-right text-xs"></i>
           </Link>
         </div>
         
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="divide-y divide-gray-100">
-            {/* Empty state */}
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i className="fas fa-calendar-day text-2xl text-gray-400"></i>
-              </div>
-              <p className="text-gray-500 text-base mb-1">No highlights for today</p>
-              <p className="text-sm text-gray-400">Your tasks and events will appear here</p>
+        <div className="bg-white rounded-xl border border-gray-200 p-8">
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-calendar-day text-2xl text-gray-400"></i>
             </div>
+            <p className="text-gray-500 mb-2">No highlights for today</p>
+            <p className="text-sm text-gray-400">Your tasks and events will appear here</p>
           </div>
         </div>
       </div>
 
-      {/* To Market Section */}
+      {/* Quick Stats */}
       <div>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">To Market</h2>
-          <Link href="/dashboard/market" className="text-base font-medium text-gray-900 hover:text-gray-600 flex items-center gap-2 transition-colors">
-            View All
-            <i className="fas fa-arrow-right text-sm"></i>
-          </Link>
-        </div>
-        
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
-          <div className="flex flex-col items-center justify-center text-center py-8">
-            {/* Bot Icon */}
-            <div className="mb-8">
-              <svg className="w-20 h-20 text-gray-800" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="25" y="35" width="50" height="35" rx="8" />
-                <circle cx="40" cy="50" r="3" fill="currentColor" />
-                <circle cx="60" cy="50" r="3" fill="currentColor" />
-                <path d="M 35 62 Q 50 68 65 62" strokeLinecap="round" />
-                <line x1="50" y1="20" x2="50" y2="35" strokeLinecap="round" />
-                <circle cx="50" cy="18" r="3" fill="currentColor" />
-              </svg>
-            </div>
-
-            {/* Input Field */}
-            <div className="w-full max-w-2xl">
-              <input
-                type="text"
-                placeholder="What can I do for you today?"
-                className="w-full px-6 py-4 text-gray-500 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-              
-              {/* Quick Actions */}
-              <div className="flex items-center gap-3 mt-4 justify-center flex-wrap">
-                <button className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
-                  <i className="fas fa-cog"></i>
-                  Services
-                </button>
-                <button className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-                  /Listing
-                </button>
-                <button className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-                  #Contact
-                </button>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Overview</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-sm transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <i className="fas fa-car text-green-600"></i>
               </div>
             </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">--</div>
+            <div className="text-sm text-gray-500">Active Listings</div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-sm transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i className="fas fa-bullhorn text-blue-600"></i>
+              </div>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">--</div>
+            <div className="text-sm text-gray-500">Active Campaigns</div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-sm transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i className="fas fa-users text-purple-600"></i>
+              </div>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">--</div>
+            <div className="text-sm text-gray-500">Total Contacts</div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-sm transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                <i className="fas fa-chart-line text-orange-600"></i>
+              </div>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">--</div>
+            <div className="text-sm text-gray-500">Total Views</div>
           </div>
         </div>
       </div>
 
+      {/* Quick Actions */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Get Started</h2>
+          <Link href="/dashboard/settings" className="text-sm font-medium text-gray-900 hover:text-blue-600 flex items-center gap-1">
+            View All
+            <i className="fas fa-arrow-right text-xs"></i>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link 
+            href="/dashboard/settings#integrations" 
+            className="bg-white rounded-xl border border-gray-200 p-6 hover:border-blue-300 hover:shadow-sm transition-all group"
+          >
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
+              <i className="fas fa-plug text-green-600"></i>
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-2">Connect Integrations</h3>
+            <p className="text-sm text-gray-500">Connect mobile.de, Facebook, and more to sync your inventory</p>
+          </Link>
+
+          <Link 
+            href="/dashboard/social" 
+            className="bg-white rounded-xl border border-gray-200 p-6 hover:border-blue-300 hover:shadow-sm transition-all group"
+          >
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
+              <i className="fas fa-bullhorn text-blue-600"></i>
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-2">Create Campaign</h3>
+            <p className="text-sm text-gray-500">Launch new social media ads for your vehicles</p>
+          </Link>
+
+          <Link 
+            href="/dashboard/inventory" 
+            className="bg-white rounded-xl border border-gray-200 p-6 hover:border-blue-300 hover:shadow-sm transition-all group"
+          >
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-200 transition-colors">
+              <i className="fas fa-car text-purple-600"></i>
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-2">Manage Inventory</h3>
+            <p className="text-sm text-gray-500">View and manage your vehicle listings</p>
+          </Link>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+        <div className="bg-white rounded-xl border border-gray-200 p-8">
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-clock text-2xl text-gray-400"></i>
+            </div>
+            <p className="text-gray-500 mb-2">No recent activity</p>
+            <p className="text-sm text-gray-400">Your recent actions will appear here</p>
+          </div>
+        </div>
       </div>
     </div>
   );
