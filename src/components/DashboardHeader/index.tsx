@@ -17,9 +17,10 @@ import authManager from '@/lib/auth';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
+  sidebarOpen?: boolean;
 }
 
-const DashboardHeader: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
+const DashboardHeader: React.FC<HeaderProps> = ({ onToggleSidebar, sidebarOpen = false }) => {
   const [user, setUser] = useState<any | null>(null);
 
   useEffect(() => {
@@ -33,14 +34,23 @@ const DashboardHeader: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const avatarLetter = String(fullName || 'U').charAt(0).toUpperCase();
 
   return (
-    <header className="flex items-center justify-between bg-gray-100 px-4 py-3 shadow z-10">
+    <header className="flex items-center justify-between bg-white border-b border-gray-200 px-4 py-3 shadow-sm z-10">
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="text-gray-800 text-xl focus:outline-none"
+          className="w-9 h-9 flex items-center justify-center rounded-md border border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label="Toggle sidebar"
+          title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
         >
-          ☰
+          {sidebarOpen ? (
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            </svg>
+          )}
         </button>
       </div>
 
