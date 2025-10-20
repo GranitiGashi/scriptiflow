@@ -567,29 +567,36 @@ export default function InventoryPage() {
                   {(car.dealerCity || car.dealerZip) && (
                     <div className="mt-2 text-xs text-gray-500">Location: {car.dealerCity || ''} {car.dealerZip ? `(${car.dealerZip})` : ''}</div>
                   )}
-                  <div className="mt-4 grid grid-cols-3 gap-2">
+                  <div className="mt-4 flex flex-col gap-2">
                     <a
                       href={car.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-center bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-3 rounded"
+                      className="flex items-center justify-center gap-2 bg-gray-900 hover:bg-black text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-all hover:shadow-md group"
                     >
-                      View
+                      <i className="fas fa-eye text-sm group-hover:scale-110 transition-transform"></i>
+                      View Details
                     </a>
-                    <button
-                      onClick={() => allowed ? handleBoostPost(car) : undefined}
-                      className={`text-white text-sm font-medium py-2 px-3 rounded ${allowed ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'}`}
-                      title={allowed ? 'Boost diesen Beitrag' : 'Upgrade erforderlich: Boost nur ab Pro'}
-                    >
-                      Boost
-                    </button>
-                    <button
-                      onClick={() => allowed ? openSocialPreview(car) : undefined}
-                      className={`text-white text-sm font-medium py-2 px-3 rounded ${allowed ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-400 cursor-not-allowed'}`}
-                      title={allowed ? 'Preview social post' : 'Upgrade erforderlich'}
-                    >
-                      Post
-                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => allowed ? handleBoostPost(car) : undefined}
+                        className={`flex items-center justify-center gap-2 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-all group ${allowed ? 'bg-purple-600 hover:bg-purple-700 hover:shadow-md' : 'bg-gray-400 cursor-not-allowed'}`}
+                        title={allowed ? 'Boost diesen Beitrag' : 'Upgrade erforderlich: Boost nur ab Pro'}
+                        disabled={!allowed}
+                      >
+                        <i className="fas fa-rocket text-sm group-hover:scale-110 transition-transform"></i>
+                        Boost
+                      </button>
+                      <button
+                        onClick={() => allowed ? openSocialPreview(car) : undefined}
+                        className={`flex items-center justify-center gap-2 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-all group ${allowed ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-md' : 'bg-gray-400 cursor-not-allowed'}`}
+                        title={allowed ? 'Preview social post' : 'Upgrade erforderlich'}
+                        disabled={!allowed}
+                      >
+                        <i className="fas fa-share-alt text-sm group-hover:scale-110 transition-transform"></i>
+                        Post
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
