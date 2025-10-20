@@ -4,10 +4,25 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import authManager from '@/lib/auth';
 
+interface UserApp {
+  id: string;
+  name: string;
+  icon_url: string | null;
+  external_url: string;
+  background_color: string;
+  text_color: string;
+  is_admin_created?: boolean;
+  is_locked?: boolean;
+}
+
 const Dashboard: React.FC = () => {
   const [role, setRole] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [greeting, setGreeting] = useState('');
+  const [apps, setApps] = useState<UserApp[]>([]);
+  const [loadingApps, setLoadingApps] = useState(true);
+
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
 
   useEffect(() => {
     const storedRole = localStorage.getItem('role');
@@ -26,7 +41,37 @@ const Dashboard: React.FC = () => {
       else if (hour < 18) setGreeting('Good afternoon');
       else setGreeting('Good evening');
     } catch {}
+
+    // Fetch user apps
+    fetchUserApps();
   }, []);
+
+  const fetchUserApps = async () => {
+    try {
+      const res = await authManager.authenticatedFetch(`${baseDomain}/api/user/apps`, {
+        headers: { Accept: 'application/json' }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setApps(data || []);
+      } else {
+        console.error('Failed to fetch user apps');
+      }
+    } catch (error) {
+      console.error('Error fetching user apps:', error);
+    } finally {
+      setLoadingApps(false);
+    }
+  };
+
+  const openApp = (url: string) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      window.open(`https://${url}`, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   const fullName = user?.full_name || user?.name || 'User';
   const firstName = fullName.split(' ')[0];
@@ -39,6 +84,68 @@ const Dashboard: React.FC = () => {
           {greeting}, {firstName}
         </h1>
         <p className="text-gray-500">Here's what's happening with your dealership today</p>
+      </div>
+
+      {/* Apps Section */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Your Apps</h2>
+          <Link href="/dashboard/settings#integrations" className="text-sm font-medium text-gray-900 hover:text-blue-600 flex items-center gap-1">
+            Manage Apps
+            <i className="fas fa-arrow-right text-xs"></i>
+          </Link>
+        </div>
+        
+        {loadingApps ? (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : apps.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i className="fas fa-th text-2xl text-gray-400"></i>
+              </div>
+              <p className="text-gray-500 mb-2">No apps configured</p>
+              <p className="text-sm text-gray-400">Contact your administrator to add apps</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {apps.map((app) => (
+              <button
+                key={app.id}
+                onClick={() => openApp(app.external_url)}
+                className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer"
+                style={{ backgroundColor: 'white' }}
+              >
+                <div 
+                  className="w-12 h-12 rounded-lg flex items-center justify-center transition-all group-hover:scale-110"
+                  style={{ 
+                    backgroundColor: app.background_color,
+                    color: app.text_color
+                  }}
+                >
+                  {app.icon_url ? (
+                    <img 
+                      src={app.icon_url} 
+                      alt={app.name}
+                      className="w-8 h-8 object-contain"
+                    />
+                  ) : (
+                    <i className="fas fa-link text-xl"></i>
+                  )}
+                </div>
+                <span 
+                  className="text-xs font-medium text-center line-clamp-2"
+                  style={{ color: '#374151' }}
+                >
+                  {app.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Today's Highlights */}
