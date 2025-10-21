@@ -24,13 +24,29 @@ export default function ForgotPasswordPage() {
       // payload.captcha_token = (window as any).captchaToken || undefined;
       const res = await fetch(`${baseDomain}/api/forgot-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
+      
+      const data = await res.json().catch(() => ({}));
+      
+      if (!res.ok) {
+        console.error('Password reset error:', data);
+        // Show error if there's a real problem
+        if (res.status === 403) {
+          setError('Request blocked. Please try again or contact support.');
+          return;
+        }
+      }
+      
       // Always show success to avoid enumeration
       setStatus('If an account exists, a recovery email has been sent.');
       setEmail('');
     } catch (e: any) {
+      console.error('Network error:', e);
       // Show generic status regardless of error
       setStatus('If an account exists, a recovery email has been sent.');
     } finally {

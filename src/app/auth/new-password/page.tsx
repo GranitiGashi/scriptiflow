@@ -97,6 +97,7 @@ export default function NewPasswordPage() {
       const res = await fetch(`${baseDomain}/api/set-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${access}`, 'x-refresh-token': refresh },
+        credentials: 'include',
         body: JSON.stringify({ password, mode, state }),
       });
       if (!res.ok) {

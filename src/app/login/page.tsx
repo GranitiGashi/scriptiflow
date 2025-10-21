@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import "../../app/globals.css";
@@ -38,8 +38,55 @@ const LoginForm: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [checking, setChecking] = useState<boolean>(true);
 
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkExistingSession = () => {
+      try {
+        const accessToken = localStorage.getItem('access_token');
+        const refreshToken = localStorage.getItem('refresh_token');
+        const userStr = localStorage.getItem('user');
+        const expiresAt = localStorage.getItem('expires_at');
+
+        // If we have tokens and user data
+        if (accessToken && refreshToken && userStr) {
+          const user = JSON.parse(userStr);
+          
+          // Check if token is expired (with 5 min buffer)
+          if (expiresAt) {
+            const expirationTime = parseInt(expiresAt) * 1000; // Convert to milliseconds
+            const now = Date.now();
+            const bufferTime = 5 * 60 * 1000; // 5 minutes buffer
+            
+            // If token is still valid, redirect to dashboard
+            if (expirationTime - now > bufferTime) {
+              console.log('User already logged in, redirecting to dashboard...');
+              const dest = user.role === 'admin' ? '/dashboard/admin' : '/dashboard';
+              router.push(dest);
+              return;
+            }
+          } else {
+            // No expiration time, but have tokens - assume valid and redirect
+            console.log('User session found, redirecting to dashboard...');
+            const dest = user.role === 'admin' ? '/dashboard/admin' : '/dashboard';
+            router.push(dest);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error checking session:', err);
+        // Clear invalid data
+        localStorage.clear();
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    checkExistingSession();
+  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -62,6 +109,7 @@ const LoginForm: React.FC = () => {
           headers: {
             "Content-Type": "application/json",
           },
+          withCredentials: true,
         }
       );
       console.log("Login response:", response.data);
@@ -89,6 +137,18 @@ const LoginForm: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Show loading state while checking session
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-400">Checking session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">

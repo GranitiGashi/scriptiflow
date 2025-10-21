@@ -73,6 +73,7 @@ class AuthManager {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${refreshToken}`,
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -119,6 +120,7 @@ class AuthManager {
     const response = await fetch(url, {
       ...options,
       headers,
+      credentials: 'include',
     });
 
     // If we get 401, try to refresh token once more
@@ -134,6 +136,7 @@ class AuthManager {
         return await fetch(url, {
           ...options,
           headers: retryHeaders,
+          credentials: 'include',
         });
       }
     }

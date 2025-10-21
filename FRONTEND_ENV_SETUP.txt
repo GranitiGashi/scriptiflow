@@ -1,0 +1,73 @@
+╔══════════════════════════════════════════════════════════════╗
+║         FRONTEND ENVIRONMENT SETUP                            ║
+╚══════════════════════════════════════════════════════════════╝
+
+IMPORTANT: Create this file manually:
+  → scriptiflow/.env.local
+
+┌─────────────────────────────────────────────────────────────┐
+│ STEP 1: Create .env.local file                              │
+└─────────────────────────────────────────────────────────────┘
+
+In PowerShell (Windows):
+  cd scriptiflow
+  New-Item .env.local -ItemType File
+
+In Mac/Linux:
+  cd scriptiflow
+  touch .env.local
+
+┌─────────────────────────────────────────────────────────────┐
+│ STEP 2: Add this content to scriptiflow/.env.local          │
+└─────────────────────────────────────────────────────────────┘
+
+NEXT_PUBLIC_BASE_DOMAIN=https://scriptiflow-server.onrender.com
+
+┌─────────────────────────────────────────────────────────────┐
+│ STEP 3: Restart Next.js dev server                          │
+└─────────────────────────────────────────────────────────────┘
+
+  cd scriptiflow
+  npm run dev
+
+╔══════════════════════════════════════════════════════════════╗
+║         IMPORTANT: DEPLOY BACKEND FIRST!                     ║
+╚══════════════════════════════════════════════════════════════╝
+
+The backend code has been updated to allow localhost.
+You MUST deploy it to Render before the frontend will work:
+
+  1. Commit the changes:
+     git add .
+     git commit -m "Fix CORS for localhost development"
+     git push origin main
+
+  2. Wait for Render to deploy (2-5 minutes)
+     → Check: https://dashboard.render.com
+
+  3. Then restart your frontend:
+     cd scriptiflow
+     npm run dev
+
+  4. Test login at http://localhost:3000/login
+
+╔══════════════════════════════════════════════════════════════╗
+║         ALTERNATIVE: RUN BACKEND LOCALLY                     ║
+╚══════════════════════════════════════════════════════════════╝
+
+If you want to run the backend locally instead:
+
+  1. In scriptiflow/.env.local use:
+     NEXT_PUBLIC_BASE_DOMAIN=http://localhost:8081
+
+  2. Start backend locally:
+     cd scriptiflow_server
+     npm install
+     npm start
+
+  3. Start frontend:
+     cd scriptiflow
+     npm run dev
+
+For more details, see: RENDER_DEPLOYMENT_FIX.md
+
