@@ -8,6 +8,155 @@ import {
   Views,
 } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+// Custom calendar styles
+const customCalendarStyles = `
+  .rbc-calendar {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  
+  .rbc-header {
+    background: #f8fafc !important;
+    color: #374151 !important;
+    font-weight: 600 !important;
+    padding: 16px 8px !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    font-size: 14px !important;
+  }
+  
+  .rbc-month-view {
+    border: none !important;
+  }
+  
+  .rbc-month-row {
+    border-bottom: 1px solid #f3f4f6 !important;
+  }
+  
+  .rbc-date-cell {
+    padding: 8px !important;
+    color: #374151 !important;
+  }
+  
+  .rbc-off-range-bg {
+    background: #f9fafb !important;
+  }
+  
+  .rbc-today {
+    background: #eff6ff !important;
+  }
+  
+  .rbc-today .rbc-date-cell {
+    color: #1d4ed8 !important;
+    font-weight: 600 !important;
+  }
+  
+  .rbc-event {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: white !important;
+    font-weight: 500 !important;
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+    margin: 1px !important;
+  }
+  
+  .rbc-event:hover {
+    background: linear-gradient(135deg, #2563eb, #1e40af) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4) !important;
+  }
+  
+  .rbc-event-content {
+    color: white !important;
+  }
+  
+  .rbc-slot-selection {
+    background: rgba(59, 130, 246, 0.1) !important;
+  }
+  
+  .rbc-time-view .rbc-header {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    padding: 12px 8px !important;
+  }
+  
+  .rbc-time-slot {
+    border-bottom: 1px solid #f3f4f6 !important;
+  }
+  
+  .rbc-timeslot-group {
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+  
+  .rbc-time-content {
+    border-left: 1px solid #e5e7eb !important;
+  }
+  
+  .rbc-time-header-content {
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+  
+  .rbc-agenda-view table {
+    border: none !important;
+  }
+  
+  .rbc-agenda-view .rbc-agenda-table {
+    border: 1px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+  }
+  
+  .rbc-agenda-view .rbc-agenda-date-cell {
+    background: #f8fafc !important;
+    color: #374151 !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+  
+  .rbc-agenda-view .rbc-agenda-time-cell {
+    color: #6b7280 !important;
+    font-weight: 500 !important;
+  }
+  
+  .rbc-agenda-view .rbc-agenda-event-cell {
+    border-bottom: 1px solid #f3f4f6 !important;
+  }
+  
+  .rbc-toolbar {
+    display: none !important;
+  }
+  
+  .rbc-btn-group button {
+    border: 1px solid #d1d5db !important;
+    color: #374151 !important;
+    background: white !important;
+    padding: 8px 16px !important;
+    border-radius: 8px !important;
+    margin: 0 2px !important;
+    font-weight: 500 !important;
+  }
+  
+  .rbc-btn-group button:hover {
+    background: #f3f4f6 !important;
+  }
+  
+  .rbc-btn-group button.rbc-active {
+    background: #3b82f6 !important;
+    color: white !important;
+    border-color: #3b82f6 !important;
+  }
+`;
+
+// Inject custom styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = customCalendarStyles;
+  document.head.appendChild(styleSheet);
+}
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import {
@@ -76,6 +225,9 @@ export default function CalendarClient() {
     Array<{ id: string; title: string; image?: string | null }>
   >([]);
   const [loading, setLoading] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [outlookConnected, setOutlookConnected] = useState(false);
+  const [syncStatus, setSyncStatus] = useState('');
 
   const events = useMemo<RBCEvent[]>(
     () =>
@@ -104,8 +256,66 @@ export default function CalendarClient() {
     }
   };
 
+  const checkConnectionStatus = async () => {
+    try {
+      // Check Google Calendar status (Gmail integration)
+      const googleRes = await authManager.authenticatedFetch(
+        `${baseDomain}/api/email/status`
+      );
+      if (googleRes.ok) {
+        const googleData = await googleRes.json();
+        setGoogleConnected(googleData.connected || false);
+      } else {
+        setGoogleConnected(false);
+      }
+
+      // Check Outlook status
+      const outlookRes = await authManager.authenticatedFetch(
+        `${baseDomain}/api/outlook/status`
+      );
+      if (outlookRes.ok) {
+        const outlookData = await outlookRes.json();
+        setOutlookConnected(outlookData.connected || false);
+      } else {
+        setOutlookConnected(false);
+      }
+    } catch (error) {
+      console.error('Failed to check connection status:', error);
+      setGoogleConnected(false);
+      setOutlookConnected(false);
+    }
+  };
+
+  const connectOutlook = async () => {
+    try {
+      const res = await authManager.authenticatedFetch(
+        `${baseDomain}/api/outlook/auth-url`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        window.open(data.authUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Failed to get Outlook auth URL:', error);
+    }
+  };
+
+  const disconnectOutlook = async () => {
+    try {
+      await authManager.authenticatedFetch(
+        `${baseDomain}/api/outlook/disconnect`,
+        { method: 'POST' }
+      );
+      setOutlookConnected(false);
+      await load(); // Reload events
+    } catch (error) {
+      console.error('Failed to disconnect Outlook:', error);
+    }
+  };
+
   useEffect(() => {
     load();
+    checkConnectionStatus();
     (async () => {
       try {
         const res = await authManager.authenticatedFetch(
@@ -215,334 +425,401 @@ export default function CalendarClient() {
   };
 
   return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          bgcolor: '#f8fafc',
-          p: 3,
-        }}
-      >
-        {/* Header */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 3,
-          }}
-        >
-          <Typography
-            variant="h5"
-            fontWeight={700}
-            sx={{ color: '#111827' }}
-          >
-            Calendar
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ButtonGroup size="small" variant="outlined">
-              <Button
-                startIcon={<TodayIcon />}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      {/* Modern Header */}
+      <div className="mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+              📅 Calendar
+            </h1>
+            <p className="text-gray-600 text-lg">✨ Manage your appointments and events with style</p>
+            
+            {/* Sync Status */}
+            <div className="flex items-center gap-4 mt-3">
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${googleConnected ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                <span className="text-sm text-gray-600">Google Calendar {googleConnected ? 'Connected' : 'Not Connected'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${outlookConnected ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                <span className="text-sm text-gray-600">Outlook Calendar {outlookConnected ? 'Connected' : 'Not Connected'}</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Controls */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Navigation */}
+            <div className="flex items-center bg-white rounded-xl shadow-sm border border-gray-200 p-1">
+              <button
                 onClick={() => setDate(new Date())}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
+                <TodayIcon className="w-4 h-4" />
                 Today
-              </Button>
-              <IconButton
-                onClick={() =>
-                  setDate(
-                    new Date(
-                      date.getFullYear(),
-                      date.getMonth(),
-                      date.getDate() - 1
-                    )
-                  )
-                }
+              </button>
+              <div className="h-6 w-px bg-gray-200 mx-1" />
+              <button
+                onClick={() => setDate(new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1))}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <ChevronLeft />
-              </IconButton>
-              <IconButton
-                onClick={() =>
-                  setDate(
-                    new Date(
-                      date.getFullYear(),
-                      date.getMonth(),
-                      date.getDate() + 1
-                    )
-                  )
-                }
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setDate(new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1))}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <ChevronRight />
-              </IconButton>
-            </ButtonGroup>
-            <ToggleButtonGroup
-              size="small"
-              value={view}
-              exclusive
-              onChange={(_, v) => v && setView(v)}
-              sx={{
-                borderRadius: 2,
-                overflow: 'hidden',
-                bgcolor: 'white',
-                boxShadow: 1,
-              }}
-            >
-              <ToggleButton value={Views.DAY}>Day</ToggleButton>
-              <ToggleButton value={Views.WEEK}>Week</ToggleButton>
-              <ToggleButton value={Views.MONTH}>Month</ToggleButton>
-              <ToggleButton value={Views.AGENDA}>Agenda</ToggleButton>
-            </ToggleButtonGroup>
-            <Button
-              variant="contained"
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* View Toggle */}
+            <div className="flex items-center bg-white rounded-xl shadow-sm border border-gray-200 p-1">
+              {[Views.DAY, Views.WEEK, Views.MONTH, Views.AGENDA].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                    view === v
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {v.charAt(0).toUpperCase() + v.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {/* Outlook Connection */}
+            {!outlookConnected ? (
+              <button
+                onClick={connectOutlook}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                <div className="w-4 h-4 border-2 border-white rounded-full" />
+                Connect Outlook
+              </button>
+            ) : (
+              <button
+                onClick={disconnectOutlook}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 transition-colors shadow-sm"
+              >
+                <div className="w-4 h-4 border-2 border-white rounded-full" />
+                Disconnect Outlook
+              </button>
+            )}
+
+            {/* Sync Button */}
+            <button
               onClick={load}
               disabled={loading}
-              sx={{
-                ml: 1,
-                borderRadius: 2,
-                textTransform: 'none',
-                bgcolor: '#4f46e5',
-                '&:hover': { bgcolor: '#4338ca' },
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <div className="w-4 h-4 border-2 border-white rounded-full" />
+              )}
+              {loading ? 'Syncing...' : 'Sync Now'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Calendar Container */}
+      <div className="relative">
+        {/* Decorative elements */}
+        <div className="absolute -top-4 -left-4 w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full opacity-10 blur-xl"></div>
+        <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full opacity-10 blur-xl"></div>
+        
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 overflow-hidden relative z-10">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4">
+            <div className="flex items-center justify-between text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                <span className="font-semibold">Live Calendar</span>
+              </div>
+              <div className="text-sm opacity-90">
+                {date.toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </div>
+            </div>
+          </div>
+          
+          <div style={{ height: '75vh' }}>
+            <Calendar
+              localizer={localizer}
+              events={events}
+              selectable
+              startAccessor="start"
+              endAccessor="end"
+              date={date}
+              onNavigate={(d) => setDate(d as Date)}
+              view={view as any}
+              onView={(v) => setView(v as string)}
+              views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+              popup
+              onSelectSlot={onSelectSlot}
+              onSelectEvent={onSelectEvent}
+              style={{ height: '100%', padding: '20px' }}
+              eventPropGetter={(event) => ({
+                style: {
+                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: 'white',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  padding: '6px 12px',
+                  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                  borderLeft: '4px solid #1d4ed8',
+                },
+              })}
+              components={{
+                toolbar: () => null, // Hide default toolbar
               }}
-            >
-              {loading ? 'Syncing…' : 'Sync Now'}
-            </Button>
-          </Box>
-        </Box>
+            />
+          </div>
+        </div>
+      </div>
 
-        {/* Calendar Card */}
-        <Card
-          sx={{
-            height: '75vh',
+      {/* Modern Event Dialog */}
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        fullWidth
+        maxWidth="md"
+        PaperProps={{
+          sx: {
             borderRadius: 4,
-            boxShadow: 4,
-            p: 2,
-            bgcolor: 'white',
-          }}
-        >
-          <Calendar
-            localizer={localizer}
-            events={events}
-            selectable
-            startAccessor="start"
-            endAccessor="end"
-            date={date}
-            onNavigate={(d) => setDate(d as Date)}
-            view={view as any}
-            onView={(v) => setView(v as string)}
-            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-            popup
-            onSelectSlot={onSelectSlot}
-            onSelectEvent={onSelectEvent}
-            style={{ height: '100%' }}
-          />
-        </Card>
-
-        {/* Event Dialog */}
-        <Dialog
-          open={open}
-          onClose={() => setOpen(false)}
-          fullWidth
-          maxWidth="sm"
-          PaperProps={{
-            sx: {
-              borderRadius: 3,
-              p: 1,
-            },
-          }}
-        >
-          <DialogTitle sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="h6" fontWeight={600}>
-              {form.id ? 'Edit Event' : 'Create Event'}
-            </Typography>
-            <IconButton
-              sx={{ ml: 'auto' }}
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          },
+        }}
+      >
+        {/* Dialog Header */}
+        <div className="relative p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {form.id ? 'Edit Event' : 'Create New Event'}
+              </h2>
+              <p className="text-gray-600 mt-1">
+                {form.id ? 'Update your event details' : 'Add a new appointment or meeting'}
+              </p>
+            </div>
+            <button
               onClick={() => setOpen(false)}
-              size="small"
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
             >
-              <CloseIcon />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent dividers>
-            {/* Event Info */}
-            <Typography
-              variant="subtitle2"
-              color="text.secondary"
-              sx={{ mb: 1, fontWeight: 600 }}
-            >
-              Event Info
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Title"
+              <CloseIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Dialog Content */}
+        <div className="p-6 space-y-6">
+          {/* Event Details */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+              Event Details
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Event Title *
+                </label>
+                <input
+                  type="text"
                   value={form.title}
-                  onChange={(e) =>
-                    setForm((f: any) => ({ ...f, title: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f: any) => ({ ...f, title: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="Enter event title"
                 />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Start"
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Start Time *
+                </label>
+                <input
                   type="datetime-local"
                   value={form.start_time ? form.start_time.substring(0, 16) : ''}
-                  onChange={(e) =>
-                    setForm((f: any) => ({
-                      ...f,
-                      start_time: new Date(e.target.value).toISOString(),
-                    }))
-                  }
+                  onChange={(e) => setForm((f: any) => ({ ...f, start_time: new Date(e.target.value).toISOString() }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="End"
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  End Time *
+                </label>
+                <input
                   type="datetime-local"
                   value={form.end_time ? form.end_time.substring(0, 16) : ''}
-                  onChange={(e) =>
-                    setForm((f: any) => ({
-                      ...f,
-                      end_time: new Date(e.target.value).toISOString(),
-                    }))
-                  }
+                  onChange={(e) => setForm((f: any) => ({ ...f, end_time: new Date(e.target.value).toISOString() }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Location"
-                  value={form.location}
-                  onChange={(e) =>
-                    setForm((f: any) => ({ ...f, location: e.target.value }))
-                  }
-                  InputProps={{
-                    startAdornment: <LocationOn fontSize="small" sx={{ mr: 1 }} />,
-                  }}
-                />
-              </Grid>
-            </Grid>
+              </div>
+              
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Location
+                </label>
+                <div className="relative">
+                  <LocationOn className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    value={form.location || ''}
+                    onChange={(e) => setForm((f: any) => ({ ...f, location: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="Enter location"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
 
-            <Divider sx={{ my: 2 }} />
-
-            {/* Car Info */}
-            <Typography
-              variant="subtitle2"
-              color="text.secondary"
-              sx={{ mb: 1, fontWeight: 600 }}
-            >
-              Car Info
-            </Typography>
-            <TextField
-              fullWidth
-              select
-              label="Car"
-              value={form.car_mobile_de_id || ''}
-              onChange={(e) =>
-                setForm((f: any) => ({ ...f, car_mobile_de_id: e.target.value }))
-              }
-            >
-              {cars.map((c) => (
-                <MenuItem key={c.id} value={c.id}>
-                  <Avatar
-                    variant="rounded"
-                    src={c.image || undefined}
-                    sx={{ width: 28, height: 28, mr: 1 }}
-                  >
-                    {c.title.slice(0, 1)}
-                  </Avatar>
-                  <Box>{c.title}</Box>
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <Divider sx={{ my: 2 }} />
-
-            {/* Customer Info */}
-            <Typography
-              variant="subtitle2"
-              color="text.secondary"
-              sx={{ mb: 1, fontWeight: 600 }}
-            >
-              Customer Info
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Customer Name"
-                  value={form.customer_name || ''}
-                  onChange={(e) =>
-                    setForm((f: any) => ({ ...f, customer_name: e.target.value }))
-                  }
-                  InputProps={{
-                    startAdornment: <Person fontSize="small" sx={{ mr: 1 }} />,
-                  }}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  fullWidth
-                  label="Customer Email"
-                  value={form.customer_email || ''}
-                  onChange={(e) =>
-                    setForm((f: any) => ({
-                      ...f,
-                      customer_email: e.target.value,
-                    }))
-                  }
-                  InputProps={{
-                    startAdornment: <Email fontSize="small" sx={{ mr: 1 }} />,
-                  }}
-                />
-              </Grid>
-            </Grid>
-
-            <Divider sx={{ my: 2 }} />
-
-            {/* Notes */}
-            <TextField
-              fullWidth
-              label="Notes"
-              multiline
-              minRows={3}
-              value={form.description || ''}
-              onChange={(e) =>
-                setForm((f: any) => ({ ...f, description: e.target.value }))
-              }
-            />
-          </DialogContent>
-          <DialogActions sx={{ px: 3, py: 2 }}>
-            {form.id && (
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<DeleteIcon />}
-                onClick={remove}
-                sx={{ borderRadius: 2, textTransform: 'none' }}
+          {/* Car Selection */}
+          {cars.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                Vehicle
+              </h3>
+              
+              <TextField
+                fullWidth
+                select
+                label="Car"
+                value={form.car_mobile_de_id || ''}
+                onChange={(e) =>
+                  setForm((f: any) => ({ ...f, car_mobile_de_id: e.target.value }))
+                }
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '12px',
+                  },
+                }}
               >
-                Delete
-              </Button>
+                {cars.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    <Avatar
+                      variant="rounded"
+                      src={c.image || undefined}
+                      sx={{ width: 28, height: 28, mr: 1 }}
+                    >
+                      {c.title.slice(0, 1)}
+                    </Avatar>
+                    <Box>{c.title}</Box>
+                  </MenuItem>
+                ))}
+              </TextField>
+            </div>
+          )}
+
+          {/* Customer Info */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+              Customer Information
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Customer Name
+                </label>
+                <div className="relative">
+                  <Person className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    value={form.customer_name || ''}
+                    onChange={(e) => setForm((f: any) => ({ ...f, customer_name: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="Enter customer name"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Customer Email
+                </label>
+                <div className="relative">
+                  <Email className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="email"
+                    value={form.customer_email || ''}
+                    onChange={(e) => setForm((f: any) => ({ ...f, customer_email: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="Enter customer email"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <div className="w-2 h-2 bg-orange-600 rounded-full"></div>
+              Additional Notes
+            </h3>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Notes & Description
+              </label>
+              <textarea
+                value={form.description || ''}
+                onChange={(e) => setForm((f: any) => ({ ...f, description: e.target.value }))}
+                rows={4}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                placeholder="Add any additional notes or details..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Dialog Actions */}
+        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+          <div>
+            {form.id && (
+              <button
+                onClick={remove}
+                className="flex items-center gap-2 px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors font-medium"
+              >
+                <DeleteIcon className="w-4 h-4" />
+                Delete Event
+              </button>
             )}
-            <Button onClick={() => setOpen(false)} sx={{ textTransform: 'none' }}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<SaveIcon />}
-              onClick={save}
-              sx={{
-                borderRadius: 2,
-                textTransform: 'none',
-                bgcolor: '#4f46e5',
-                '&:hover': { bgcolor: '#4338ca' },
-              }}
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setOpen(false)}
+              className="px-6 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors font-medium"
             >
-              Save
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
+              Cancel
+            </button>
+            <button
+              onClick={save}
+              className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors font-medium shadow-sm"
+            >
+              <SaveIcon className="w-4 h-4" />
+              {form.id ? 'Update Event' : 'Create Event'}
+            </button>
+          </div>
+        </div>
+      </Dialog>
+    </div>
   );
 }
 

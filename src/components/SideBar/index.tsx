@@ -96,6 +96,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onToggle }) => {
         ...(isPro ? [{ name: "Email Inbox", path: "/dashboard/email-inbox", icon: "fas fa-envelope" }] : []),
       ]
     },
+    integrations: {
+      name: "Integrations",
+      icon: "fas fa-plug",
+      items: [
+        { name: "All Integrations", path: "/dashboard/integrations", icon: "fas fa-plug" },
+      ]
+    },
     tools: {
       name: "Tools",
       icon: "fas fa-tools",
