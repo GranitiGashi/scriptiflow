@@ -247,39 +247,82 @@ export default function InventoryPage() {
     fetchCars();
   }, [mobileDeConnected, as24Connected, baseDomain, allowed, search, sort]);
 
-  // Load filter options (makes, and models for selected make) from server cache
+
+  // Load makes from API
   useEffect(() => {
     if (!mobileDeConnected) return;
     let cancelled = false;
-    async function loadFilters() {
+    async function loadMakes() {
       try {
-        setIsLoadingFilters(true);
-        // Always fetch makes
+        console.log('Loading makes from API...');
+        
         const makeRes = await authManager.authenticatedFetch(`${baseDomain}/api/mobilede/filters`, { headers: { Accept: 'application/json' } });
+        console.log('Make filter response:', makeRes.status, makeRes.ok);
+        
         if (makeRes.ok) {
           const d = await makeRes.json();
-          if (!cancelled) setAvailableMakes(Array.isArray(d?.makes) ? d.makes : []);
+          console.log('Make filter data:', d);
+          const makes = Array.isArray(d?.makes) ? d.makes : [];
+          console.log('Setting availableMakes to:', makes);
+          if (!cancelled) setAvailableMakes(makes);
+        } else {
+          console.log('Make filter failed, response:', await makeRes.text());
         }
+      } catch (error) {
+        console.error('Error loading makes:', error);
+      }
+    }
+    loadMakes();
+    return () => { cancelled = true; };
+  }, [mobileDeConnected, baseDomain]);
+
+  // Load models when make is selected
+  useEffect(() => {
+    if (!mobileDeConnected) return;
+    let cancelled = false;
+    async function loadModels() {
+      try {
+        setIsLoadingFilters(true);
+        
         // Fetch models if a make is selected
         const make = (searchDraft.make || search.make || '').trim();
         if (make) {
+          console.log('Loading models for make:', make);
           const modelRes = await authManager.authenticatedFetch(`${baseDomain}/api/mobilede/filters?make=${encodeURIComponent(make)}`, { headers: { Accept: 'application/json' } });
+          console.log('Model filter response:', modelRes.status, modelRes.ok);
+          
           if (modelRes.ok) {
             const md = await modelRes.json();
+            console.log('Model filter data:', md);
             if (!cancelled) setAvailableModels(Array.isArray(md?.models) ? md.models : []);
           } else if (!cancelled) {
             setAvailableModels([]);
           }
-        } else if (!cancelled) {
-          setAvailableModels([]);
+        } else {
+          // If no make is selected, fetch all models from the general filters endpoint
+          console.log('Loading all models...');
+          const allModelsRes = await authManager.authenticatedFetch(`${baseDomain}/api/mobilede/filters`, { headers: { Accept: 'application/json' } });
+          console.log('All models response:', allModelsRes.status, allModelsRes.ok);
+          
+          if (allModelsRes.ok) {
+            const allData = await allModelsRes.json();
+            console.log('All models data:', allData);
+            if (!cancelled) setAvailableModels(Array.isArray(allData?.models) ? allData.models : []);
+          } else if (!cancelled) {
+            setAvailableModels([]);
+          }
         }
+      } catch (error) {
+        console.error('Error loading models:', error);
       } finally {
         if (!cancelled) setIsLoadingFilters(false);
       }
     }
-    loadFilters();
+    loadModels();
     return () => { cancelled = true; };
   }, [mobileDeConnected, baseDomain, searchDraft.make, search.make]);
+
+
 
   // Parse query params once
   useEffect(() => {
@@ -299,17 +342,33 @@ export default function InventoryPage() {
     const model = (search.model || '').trim().toLowerCase();
     const q = (search.q || '').trim().toLowerCase();
     let next = cars;
-    if (make) next = next.filter(c => (c.make || '').toLowerCase().includes(make));
-    if (model) next = next.filter(c => (c.model || '').toLowerCase().includes(model));
+    
+    // Filter by make (exact match)
+    if (make) {
+      next = next.filter(c => (c.make || '').trim().toLowerCase() === make);
+    }
+    
+    // Filter by model (exact match)
+    if (model) {
+      next = next.filter(c => (c.model || '').trim().toLowerCase() === model);
+    }
+    
+    // Filter by search query (partial match in multiple fields)
     if (q) {
       next = next.filter(c => (
         (c.modelDescription || '').toLowerCase().includes(q) ||
         (c.price || '').toLowerCase().includes(q) ||
         (c.fuel || '').toLowerCase().includes(q) ||
-        (c.power || '').toLowerCase().includes(q)
+        (c.power || '').toLowerCase().includes(q) ||
+        (c.make || '').toLowerCase().includes(q) ||
+        (c.model || '').toLowerCase().includes(q) ||
+        (c.mileage || '').toLowerCase().includes(q) ||
+        (c.gearbox || '').toLowerCase().includes(q)
       ));
     }
+    
     setFiltered(next);
+    console.log('Filtered cars:', next.length, 'from', cars.length, 'total cars. Make:', make, 'Model:', model, 'Query:', q);
   }, [cars, search]);
 
   const handleBoostPost = (car: Car) => {
@@ -418,86 +477,106 @@ export default function InventoryPage() {
     }
   }
 
+  // Debug log to see current state
+  console.log('Current availableMakes:', availableMakes);
+  console.log('Current cars:', cars.length);
+
   return (
       <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
         <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
           Car Inventory
         </h1>
 
-        {/* Search and sorting */}
-        <div className="max-w-5xl mx-auto mb-6 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setSearch({
-                make: (searchDraft.make || '').trim(),
-                model: (searchDraft.model || '').trim(),
-                q: (searchDraft.q || '').trim(),
-              });
-            }}
-            className="grid grid-cols-1 md:grid-cols-5 gap-3"
-          >
-            <div className="md:col-span-1">
-              <label className="block text-sm text-gray-600 mb-1">Make</label>
+        {/* Enhanced Search and Filter */}
+        <div className="max-w-5xl mx-auto mb-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+         
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Make
+              </label>
               <select
                 value={searchDraft.make}
-                onChange={(e) => setSearchDraft(s => ({ ...s, make: e.target.value, model: '' }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                onChange={(e) => {
+                  const newMake = e.target.value;
+                  setSearchDraft(s => ({ ...s, make: newMake, model: '' }));
+                  setSearch({
+                    make: newMake.trim(),
+                    model: '',
+                    q: searchDraft.q.trim()
+                  });
+                }}
+                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 bg-white hover:border-gray-300"
               >
-                <option value="">All</option>
+                <option value="">All Makes</option>
                 {availableMakes.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
             </div>
-            <div className="md:col-span-1">
-              <label className="block text-sm text-gray-600 mb-1">Model</label>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Model
+              </label>
               <select
                 value={searchDraft.model}
-                onChange={(e) => setSearchDraft(s => ({ ...s, model: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                onChange={(e) => {
+                  const newModel = e.target.value;
+                  setSearchDraft(s => ({ ...s, model: newModel }));
+                  setSearch({
+                    make: searchDraft.make.trim(),
+                    model: newModel.trim(),
+                    q: searchDraft.q.trim()
+                  });
+                }}
+                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 bg-white hover:border-gray-300 disabled:bg-gray-50 disabled:cursor-not-allowed"
                 disabled={!searchDraft.make && !search.make}
               >
-                <option value="">All</option>
+                <option value="">All Models</option>
                 {availableModels.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
             </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm text-gray-600 mb-1">Search term</label>
-              <input
-                value={searchDraft.q}
-                onChange={(e) => setSearchDraft(s => ({ ...s, q: e.target.value }))}
-                placeholder="Keyword in model description"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-              />
-            </div>
-            <div className="md:col-span-1">
-              <label className="block text-sm text-gray-600 mb-1">Sort by</label>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Sort By
+              </label>
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as any)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-200 bg-white hover:border-gray-300"
               >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="makeModelAsc">Make/Model A → Z</option>
-                <option value="makeModelDesc">Make/Model Z → A</option>
+                <option value="newest">🕒 Newest First</option>
+                <option value="oldest">🕰️ Oldest First</option>
               </select>
             </div>
-            <div className="md:col-span-5 flex items-center justify-end gap-2">
-              <button type="submit" className="px-4 py-2 bg-black text-white rounded-lg">Search</button>
-              <button
-                type="button"
-                className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg"
-                onClick={() => { setSearchDraft({ make: '', model: '', q: '' }); setSearch({}); }}
-              >
-                Reset
-              </button>
-            </div>
-          </form>
+          </div>
+          
+          <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-100">
+            <button
+              onClick={() => { 
+                setSearchDraft({ make: '', model: '', q: '' }); 
+                setSearch({}); 
+              }}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              <i className="fas fa-undo mr-1"></i>
+              Reset Filters
+            </button>
+            
+            {filtered.length > 0 && (
+              <span className="text-sm text-gray-500 flex items-center">
+                <i className="fas fa-info-circle mr-1"></i>
+                Showing {filtered.length} of {cars.length} cars
+              </span>
+            )}
+          </div>
         </div>
+
 
         {!allowed && (
           <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-center max-w-2xl mx-auto">
@@ -534,66 +613,108 @@ export default function InventoryPage() {
         )}
 
         {!loading && filtered.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {filtered.map((car) => (
-              <div key={car.id} className="rounded-xl overflow-hidden border bg-white shadow-sm hover:shadow-md transition">
-                <div className="relative group">
+              <div key={car.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                {/* Car Image */}
+                <div className="relative h-48 overflow-hidden">
                   {car.image ? (
-                    <img src={car.image} alt={`${car.make} ${car.model}`} className="w-full h-48 object-cover" />
+                    <img 
+                      src={car.image} 
+                      alt={`${car.make} ${car.model}`} 
+                      className="w-full h-full object-cover" 
+                    />
                   ) : (
-                    <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                      {/* <FaCar className="text-gray-400 text-4xl" /> */}
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                      <i className="fas fa-car text-gray-400 text-2xl"></i>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-70 group-hover:opacity-90 transition"></div>
-                  <div className="absolute bottom-2 left-3 text-white font-semibold text-lg">
-                    {car.make} {car.model}
-                  </div>
-                  <div className="absolute top-2 right-2 bg-white/90 text-gray-900 text-sm font-semibold px-2 py-1 rounded">
-                    {(car.price ? `${car.price} ${car.currency}` : '')}
-                  </div>
+                  
+               
                 </div>
+
+                {/* Car Details */}
                 <div className="p-4">
+                  <h3 className="font-bold text-lg mb-1 text-gray-900">
+                    {car.make} {car.model}
+                  </h3>
+                  
                   {car.modelDescription && (
-                    <div className="text-sm text-gray-600">{car.modelDescription}</div>
+                    <p className="text-gray-600 text-sm mb-3">
+                      {car.modelDescription}
+                    </p>
                   )}
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-700">
-                    {car.mileage && <span className="bg-gray-100 px-2 py-1 rounded">Mileage: {car.mileage}</span>}
-                    {car.firstRegistration && <span className="bg-gray-100 px-2 py-1 rounded">First reg: {car.firstRegistration}</span>}
-                    {car.fuel && <span className="bg-gray-100 px-2 py-1 rounded">Fuel: {car.fuel}</span>}
-                    {car.power && <span className="bg-gray-100 px-2 py-1 rounded">Power: {car.power}</span>}
-                    {car.gearbox && <span className="bg-gray-100 px-2 py-1 rounded">Gearbox: {car.gearbox}</span>}
+
+                  {/* Car specs as tags */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex flex-wrap gap-1">
+                      {car.mileage && (
+                        <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                          Mileage: {car.mileage}
+                        </span>
+                      )}
+                      {car.firstRegistration && (
+                        <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                          First reg: {car.firstRegistration}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {car.fuel && (
+                        <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                          Fuel: {car.fuel}
+                        </span>
+                      )}
+                      {car.power && (
+                        <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                          Power: {car.power}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {car.gearbox && (
+                        <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
+                          Gearbox: {car.gearbox}
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Location */}
                   {(car.dealerCity || car.dealerZip) && (
-                    <div className="mt-2 text-xs text-gray-500">Location: {car.dealerCity || ''} {car.dealerZip ? `(${car.dealerZip})` : ''}</div>
+                    <div className="text-sm text-gray-600 mb-4">
+                      Location: {car.dealerCity || ''} {car.dealerZip ? `(${car.dealerZip})` : ''}
+                    </div>
                   )}
-                  <div className="mt-4 flex flex-col gap-2">
+
+                  {/* Action buttons */}
+                  <div className="space-y-2">
                     <a
                       href={car.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 bg-gray-900 hover:bg-black text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-all hover:shadow-md group"
+                      className="flex items-center justify-center gap-2 w-full bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors"
                     >
-                      <i className="fas fa-eye text-sm group-hover:scale-110 transition-transform"></i>
+                      <i className="fas fa-eye text-xs"></i>
                       View Details
                     </a>
+                    
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => allowed ? handleBoostPost(car) : undefined}
-                        className={`flex items-center justify-center gap-2 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-all group ${allowed ? 'bg-purple-600 hover:bg-purple-700 hover:shadow-md' : 'bg-gray-400 cursor-not-allowed'}`}
-                        title={allowed ? 'Boost diesen Beitrag' : 'Upgrade erforderlich: Boost nur ab Pro'}
+                        className={`flex items-center justify-center gap-1 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors ${allowed ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                         disabled={!allowed}
                       >
-                        <i className="fas fa-rocket text-sm group-hover:scale-110 transition-transform"></i>
+                        <i className="fas fa-rocket text-xs"></i>
                         Boost
                       </button>
+                      
                       <button
                         onClick={() => allowed ? openSocialPreview(car) : undefined}
-                        className={`flex items-center justify-center gap-2 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-all group ${allowed ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-md' : 'bg-gray-400 cursor-not-allowed'}`}
-                        title={allowed ? 'Preview social post' : 'Upgrade erforderlich'}
+                        className={`flex items-center justify-center gap-1 text-white text-sm font-semibold py-2 px-3 rounded-lg transition-colors ${allowed ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                         disabled={!allowed}
                       >
-                        <i className="fas fa-share-alt text-sm group-hover:scale-110 transition-transform"></i>
+                        <i className="fas fa-share-alt text-xs"></i>
                         Post
                       </button>
                     </div>
