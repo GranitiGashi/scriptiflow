@@ -39,8 +39,11 @@ import {
   ArrowBack as ArrowBackIcon,
   MoreVert as MoreVertIcon,
   Share as ShareIcon,
-  Print as PrintIcon
+  Print as PrintIcon,
+  DirectionsCar as CarIcon,
+  OpenInNew as ExternalLinkIcon
 } from '@mui/icons-material';
+import EventCard from '@/components/EventCard';
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -289,6 +292,78 @@ export default function ContactDetailPage() {
             )}
           </Box>
 
+          {/* Car Information Section */}
+          {data?.contact?.car && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1, border: 1, borderColor: 'grey.200' }}>
+              <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CarIcon sx={{ fontSize: 18 }} />
+                Associated Vehicle
+              </Typography>
+              <Box 
+                onClick={() => {
+                  const url = data.contact.car.url || `https://suchen.mobile.de/fahrzeuge/details.html?id=${data.contact.car.id}`;
+                  window.open(url, '_blank', 'noopener,noreferrer');
+                }}
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 2, 
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'white' },
+                  p: 1,
+                  borderRadius: 1,
+                  transition: 'background-color 0.2s'
+                }}
+              >
+                {data.contact.car.image ? (
+                  <Box 
+                    sx={{ 
+                      width: 60, 
+                      height: 60, 
+                      borderRadius: 1, 
+                      overflow: 'hidden', 
+                      flexShrink: 0 
+                    }}
+                  >
+                    <img 
+                      src={data.contact.car.image} 
+                      alt={data.contact.car.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  </Box>
+                ) : (
+                  <Box 
+                    sx={{ 
+                      width: 60, 
+                      height: 60, 
+                      bgcolor: 'primary.light', 
+                      borderRadius: 1, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <CarIcon sx={{ fontSize: 24, color: 'primary.main' }} />
+                  </Box>
+                )}
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body1" fontWeight={500}>
+                    {data.contact.car.title}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Click to view details
+                  </Typography>
+                </Box>
+                <ExternalLinkIcon sx={{ color: 'text.secondary' }} />
+              </Box>
+            </Box>
+          )}
+
           <Box>
             {editing ? (
               <Stack direction="row" spacing={1}>
@@ -344,6 +419,7 @@ export default function ContactDetailPage() {
           <Tab label={`Past (${data?.history?.length || 0})`} />
           <Tab label={`Emails (${data?.emails?.length || 0})`} />
           <Tab label={`Notes (${data?.notes?.length || 0})`} />
+          <Tab label={`Cars (${data?.cars?.length || 0})`} />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
@@ -354,17 +430,13 @@ export default function ContactDetailPage() {
               </Typography>
               <Stack spacing={2}>
                 {(data?.upcoming || []).map((ev: any) => (
-                  <Box key={ev.id} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                    <Typography variant="subtitle1" fontWeight={600}>{ev.title}</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {new Date(ev.start_time).toLocaleString()} - {new Date(ev.end_time).toLocaleString()}
-                    </Typography>
-                    {ev.car_mobile_de_id && (
-                      <Typography variant="caption" color="text.secondary">
-                        Car: {ev.car_mobile_de_id}
-                      </Typography>
-                    )}
-                  </Box>
+                  <EventCard 
+                    key={ev.id} 
+                    event={ev} 
+                    cars={data?.cars || []}
+                    variant="compact"
+                    showCarInfo={true}
+                  />
                 ))}
                 {(!data?.upcoming || data.upcoming.length === 0) && (
                   <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
@@ -382,17 +454,13 @@ export default function ContactDetailPage() {
               </Typography>
               <Stack spacing={2}>
                 {(data?.history || []).map((ev: any) => (
-                  <Box key={ev.id} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                    <Typography variant="subtitle1" fontWeight={600}>{ev.title}</Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {new Date(ev.start_time).toLocaleString()} - {new Date(ev.end_time).toLocaleString()}
-                    </Typography>
-                    {ev.car_mobile_de_id && (
-                      <Typography variant="caption" color="text.secondary">
-                        Car: {ev.car_mobile_de_id}
-                      </Typography>
-                    )}
-                  </Box>
+                  <EventCard 
+                    key={ev.id} 
+                    event={ev} 
+                    cars={data?.cars || []}
+                    variant="compact"
+                    showCarInfo={true}
+                  />
                 ))}
                 {(!data?.history || data.history.length === 0) && (
                   <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
@@ -469,6 +537,87 @@ export default function ContactDetailPage() {
                 {(!data?.notes || data.notes.length === 0) && (
                   <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
                     No notes yet
+                  </Typography>
+                )}
+              </Stack>
+            </Box>
+          )}
+
+          {tab === 4 && (
+            <Box>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Associated Vehicles
+              </Typography>
+              <Stack spacing={2}>
+                {(data?.cars || []).map((car: any) => (
+                  <Box key={car.id} sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                    <Box 
+                      onClick={() => {
+                        const url = car.url || `https://suchen.mobile.de/fahrzeuge/details.html?id=${car.id}`;
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      }}
+                      sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 2, 
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'grey.50' },
+                        p: 1,
+                        borderRadius: 1,
+                        transition: 'background-color 0.2s'
+                      }}
+                    >
+                      {car.image ? (
+                        <Box 
+                          sx={{ 
+                            width: 60, 
+                            height: 60, 
+                            borderRadius: 1, 
+                            overflow: 'hidden', 
+                            flexShrink: 0 
+                          }}
+                        >
+                          <img 
+                            src={car.image} 
+                            alt={car.title}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        </Box>
+                      ) : (
+                        <Box 
+                          sx={{ 
+                            width: 60, 
+                            height: 60, 
+                            bgcolor: 'primary.light', 
+                            borderRadius: 1, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}
+                        >
+                          <CarIcon sx={{ fontSize: 24, color: 'primary.main' }} />
+                        </Box>
+                      )}
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {car.title}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Click to view details
+                        </Typography>
+                      </Box>
+                      <ExternalLinkIcon sx={{ color: 'text.secondary' }} />
+                    </Box>
+                  </Box>
+                ))}
+                {(!data?.cars || data.cars.length === 0) && (
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                    No vehicles associated with this contact
                   </Typography>
                 )}
               </Stack>
