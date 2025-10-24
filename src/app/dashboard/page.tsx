@@ -252,7 +252,7 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-gray-400">Your tasks and events will appear here</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="max-h-96 overflow-y-auto space-y-3 pr-2">
               {todayEvents.map((event) => {
                 // Try to get car data from backend first, then fallback to frontend cars
                 const backendCar = event.car;
