@@ -435,17 +435,6 @@ export default function CalendarClient() {
             </h1>
             <p className="text-gray-600 text-lg">✨ Manage your appointments and events with style</p>
             
-            {/* Sync Status */}
-            <div className="flex items-center gap-4 mt-3">
-              <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${googleConnected ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                <span className="text-sm text-gray-600">Google Calendar {googleConnected ? 'Connected' : 'Not Connected'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${outlookConnected ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                <span className="text-sm text-gray-600">Outlook Calendar {outlookConnected ? 'Connected' : 'Not Connected'}</span>
-              </div>
-            </div>
           </div>
           
           {/* Controls */}
@@ -491,24 +480,6 @@ export default function CalendarClient() {
               ))}
             </div>
 
-            {/* Outlook Connection */}
-            {!outlookConnected ? (
-              <button
-                onClick={connectOutlook}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
-              >
-                <div className="w-4 h-4 border-2 border-white rounded-full" />
-                Connect Outlook
-              </button>
-            ) : (
-              <button
-                onClick={disconnectOutlook}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 transition-colors shadow-sm"
-              >
-                <div className="w-4 h-4 border-2 border-white rounded-full" />
-                Disconnect Outlook
-              </button>
-            )}
 
             {/* Sync Button */}
             <button

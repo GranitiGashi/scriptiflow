@@ -90,10 +90,6 @@ const Dashboard: React.FC = () => {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Your Apps</h2>
-          <Link href="/dashboard/settings#integrations" className="text-sm font-medium text-gray-900 hover:text-blue-600 flex items-center gap-1">
-            Manage Apps
-            <i className="fas fa-arrow-right text-xs"></i>
-          </Link>
         </div>
         
         {loadingApps ? (
