@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import authManager from '@/lib/auth';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import {
@@ -32,6 +33,7 @@ interface ContactRow {
 }
 
 export default function ContactsPage() {
+  const router = useRouter();
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'http://localhost:8080';
 
   const [rows, setRows] = useState<ContactRow[]>([]);
@@ -116,6 +118,10 @@ export default function ContactsPage() {
     } finally { setLoading(false); }
   };
 
+  const handleContactClick = (contactId: string) => {
+    router.push(`/dashboard/contacts/${contactId}`);
+  };
+
   const columns: GridColDef<ContactRow>[] = [
     { field: 'select', headerName: '', width: 50, sortable: false, filterable: false,
       renderHeader: () => <Checkbox checked={rows.length > 0 && selectedIds.length === rows.length} onChange={(e) => toggleAll(e.target.checked)} />,
@@ -135,19 +141,55 @@ export default function ContactsPage() {
           first_name: parts[0] || '', 
           last_name: parts.slice(1).join(' ') || '' 
         };
-      }
+      },
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            cursor: 'pointer', 
+            color: 'primary.main',
+            textDecoration: 'underline',
+            '&:hover': { color: 'primary.dark' }
+          }}
+          onClick={() => handleContactClick(params.row.id)}
+        >
+          {params.value}
+        </Typography>
+      )
     },
     { 
       field: 'email', 
       headerName: 'Email', 
       flex: 1, 
-      editable: true 
+      editable: true,
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: params.value ? '#4b5563' : '#9ca3af',
+            fontStyle: params.value ? 'normal' : 'italic'
+          }}
+        >
+          {params.value || 'No email'}
+        </Typography>
+      )
     },
     { 
       field: 'phone', 
       headerName: 'Phone', 
       flex: 1, 
-      editable: true 
+      editable: true,
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: params.value ? '#4b5563' : '#9ca3af',
+            fontStyle: params.value ? 'normal' : 'italic'
+          }}
+        >
+          {params.value || 'No phone'}
+        </Typography>
+      )
     },
     { field: 'source', headerName: 'Source', width: 140 },
     { field: 'created_at', headerName: 'Created', width: 140, valueGetter: (p) => new Date(p.row.created_at).toLocaleDateString() },
@@ -278,7 +320,7 @@ export default function ContactsPage() {
           getRowId={(r) => r.id}
           loading={loading}
           disableRowSelectionOnClick
-          processRowUpdate={(newRow, oldRow) => {
+          processRowUpdate={async (newRow, oldRow) => {
             // Check for changes in first_name, last_name (from name field), email, or phone
             let updatePayload: any = {};
             let hasChanges = false;
@@ -292,6 +334,11 @@ export default function ContactsPage() {
               hasChanges = true;
             }
             if (newRow.email !== oldRow.email) {
+              // Basic email validation
+              if (newRow.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newRow.email)) {
+                alert('Please enter a valid email address');
+                return oldRow;
+              }
               updatePayload.email = newRow.email;
               hasChanges = true;
             }
@@ -301,20 +348,29 @@ export default function ContactsPage() {
             }
 
             if (hasChanges) {
-              // Send update to server
-              authManager.authenticatedFetch(`${baseDomain}/api/contacts/${newRow.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatePayload),
-              }).then(res => {
+              try {
+                const res = await authManager.authenticatedFetch(`${baseDomain}/api/contacts/${newRow.id}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(updatePayload),
+                });
+                
                 if (!res.ok) {
-                  res.json().then(err => alert(err.error || 'Update failed')).catch(() => alert('Update failed'));
-                  fetchData(); // Revert to server state
+                  const err = await res.json();
+                  alert(err.error || 'Update failed');
+                  return oldRow; // Revert to old row
                 }
-              }).catch(() => {
+                
+                // Update local state with the new data
+                setRows(prevRows => 
+                  prevRows.map(row => 
+                    row.id === newRow.id ? { ...row, ...updatePayload } : row
+                  )
+                );
+              } catch (error) {
                 alert('Failed to update contact');
-                fetchData(); // Revert to server state
-              });
+                return oldRow; // Revert to old row
+              }
             }
 
             return newRow;
@@ -379,4 +435,3 @@ export default function ContactsPage() {
     </Box>
   );
 }
-//eraaaaaaaaaaaaaaa

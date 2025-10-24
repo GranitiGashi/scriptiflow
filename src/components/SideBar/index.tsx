@@ -74,7 +74,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onToggle }) => {
       name: "Social Media",
       icon: "fas fa-share-nodes",
       items: [
-        { name: "Social Posts", path: "/dashboard/social", icon: "fas fa-share-nodes" },
+        // { name: "Social Posts", path: "/dashboard/social", icon: "fas fa-share-nodes" },
         ...(isPro ? [{ name: "Posts Monitor", path: "/dashboard/social-posts", icon: "fas fa-chart-line" }] : []),
         { name: "Autopost", path: "/dashboard/integrations/autopost", icon: "fas fa-bolt" },
         { name: "My Inventory", path: "/dashboard/inventory", icon: "fas fa-car" },
