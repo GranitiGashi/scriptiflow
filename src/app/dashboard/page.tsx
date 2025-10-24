@@ -111,16 +111,15 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
             {apps.map((app) => (
               <button
                 key={app.id}
                 onClick={() => openApp(app.external_url)}
-                className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer"
-                style={{ backgroundColor: 'white' }}
+                className="rounded-lg p-2 hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-1 group cursor-pointer"
               >
                 <div 
-                  className="w-12 h-12 rounded-lg flex items-center justify-center transition-all group-hover:scale-110"
+                  className="w-8 h-8 rounded-md flex items-center justify-center transition-all group-hover:scale-110"
                   style={{ 
                     backgroundColor: app.background_color,
                     color: app.text_color
@@ -130,15 +129,14 @@ const Dashboard: React.FC = () => {
                     <img 
                       src={app.icon_url} 
                       alt={app.name}
-                      className="w-8 h-8 object-contain"
+                      className="w-5 h-5 object-contain"
                     />
                   ) : (
-                    <i className="fas fa-link text-xl"></i>
+                    <i className="fas fa-link text-sm"></i>
                   )}
                 </div>
                 <span 
-                  className="text-xs font-medium text-center line-clamp-2"
-                  style={{ color: '#374151' }}
+                  className="text-xs font-medium text-center line-clamp-1 text-gray-700"
                 >
                   {app.name}
                 </span>
