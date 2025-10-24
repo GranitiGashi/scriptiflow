@@ -149,6 +149,34 @@ const customCalendarStyles = `
     color: white !important;
     border-color: #3b82f6 !important;
   }
+  
+  .rbc-popup {
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+    padding: 16px !important;
+    z-index: 1000 !important;
+  }
+  
+  .rbc-popup .rbc-event {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: white !important;
+    font-weight: 500 !important;
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+    margin: 4px 0 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .rbc-popup .rbc-event:hover {
+    background: linear-gradient(135deg, #2563eb, #1e40af) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4) !important;
+  }
 `;
 
 // Inject custom styles
@@ -228,6 +256,9 @@ export default function CalendarClient() {
   const [googleConnected, setGoogleConnected] = useState(false);
   const [outlookConnected, setOutlookConnected] = useState(false);
   const [syncStatus, setSyncStatus] = useState('');
+  const [showMoreEvents, setShowMoreEvents] = useState<any[]>([]);
+  const [showMoreDate, setShowMoreDate] = useState<Date | null>(null);
+  const [showMoreModal, setShowMoreModal] = useState(false);
 
   const events = useMemo<RBCEvent[]>(
     () =>
@@ -381,6 +412,13 @@ export default function CalendarClient() {
       car_mobile_de_id: r.car_mobile_de_id || '',
     });
     setOpen(true);
+  };
+
+  const onShowMore = (events: any[], date: Date) => {
+    console.log('Show more events:', events, date);
+    setShowMoreEvents(events);
+    setShowMoreDate(date);
+    setShowMoreModal(true);
   };
 
   const save = async () => {
@@ -564,8 +602,10 @@ export default function CalendarClient() {
               onView={(v) => setView(v as string)}
               views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
               popup
+              popupOffset={{ x: 10, y: 10 }}
               onSelectSlot={onSelectSlot}
               onSelectEvent={onSelectEvent}
+              onShowMore={onShowMore}
               style={{ height: '100%', padding: '20px' }}
               eventPropGetter={(event) => ({
                 style: {
@@ -817,6 +857,104 @@ export default function CalendarClient() {
               {form.id ? 'Update Event' : 'Create Event'}
             </button>
           </div>
+        </div>
+      </Dialog>
+
+      {/* Show More Events Modal */}
+      <Dialog
+        open={showMoreModal}
+        onClose={() => setShowMoreModal(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          },
+        }}
+      >
+        {/* Modal Header */}
+        <div className="relative p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Events for {showMoreDate?.toLocaleDateString()}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {showMoreEvents.length} events scheduled
+              </p>
+            </div>
+            <button
+              onClick={() => setShowMoreModal(false)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <i className="fas fa-times text-gray-400"></i>
+            </button>
+          </div>
+        </div>
+
+        {/* Modal Content */}
+        <div className="p-6">
+          <div className="space-y-3">
+            {showMoreEvents.map((event, index) => (
+              <div
+                key={index}
+                className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 hover:shadow-md transition-all cursor-pointer"
+                onClick={() => {
+                  // Open the event in the main dialog
+                  setForm({
+                    id: event.resource?.id,
+                    title: event.title,
+                    description: event.resource?.description || '',
+                    location: event.resource?.location || '',
+                    start_time: event.start.toISOString(),
+                    end_time: event.end.toISOString(),
+                    car_mobile_de_id: event.resource?.car_mobile_de_id || '',
+                  });
+                  setShowMoreModal(false);
+                  setOpen(true);
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 mb-1">
+                      {event.title}
+                    </h3>
+                    {event.resource?.description && (
+                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                        {event.resource.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <i className="fas fa-clock"></i>
+                        {event.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {event.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {event.resource?.location && (
+                        <span className="flex items-center gap-1">
+                          <i className="fas fa-map-marker-alt"></i>
+                          {event.resource.location}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    <i className="fas fa-chevron-right text-gray-400"></i>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Modal Actions */}
+        <div className="flex items-center justify-end p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+          <button
+            onClick={() => setShowMoreModal(false)}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Close
+          </button>
         </div>
       </Dialog>
     </div>
